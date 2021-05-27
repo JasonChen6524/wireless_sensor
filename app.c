@@ -38,5 +38,7 @@ void appMain(gecko_configuration_t *pconfig)
   gecko_init(pconfig);
 
   /*  jump to SPP program main loop */
-  spp_main();
+  //spp_main();
+  printLog("* SPP server mode *\r\n");
+  spp_server_main();
 }

@@ -19,5 +19,7 @@ extern const struct bg_gattdb_def bg_gattdb_data;
 #define gattdb_device_name                     11
 #define gattdb_ota_control                     23
 #define gattdb_gatt_spp_data                   26
+#define gattdb_configRWChar                    30
+#define gattdb_notifyChar                      32
 
 #endif

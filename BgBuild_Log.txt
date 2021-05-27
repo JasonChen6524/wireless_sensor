@@ -8,5 +8,7 @@ ALL OK
 
 Error/Warning output
 WARNING: fec26ec46d7144429f8155bc21d658d6 max length attribute is 255 but actual value length is 1. 255 will be used.
+WARNING: 000010271212efde1523785feabcd123 length attribute is 16 but actual value length is 1. 16 will be used.
+WARNING: 000010111212efde1523785feabcd123 max length attribute is 255 but actual value length is 1. 255 will be used.
 
 
