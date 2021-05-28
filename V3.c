@@ -137,17 +137,26 @@ void v3_info_init(void)
 // on overflow, drop data (change later to return if not enough room)
 U8 v3_XmitQ(U8 *buf, U8 n)
 {
-
-U8 i;
-   if (v3status.spp != STATE_SPP_MODE) return(0xFF);
-   for (i=0;i<n;i++) 
-   {
-      v3CommBuf.tx[v3CommBuf.txhead++] = buf[i];
+#if 0
+	U8 i;
+	if (v3status.spp != STATE_SPP_MODE) return(0xFF);
+	for (i=0;i<n;i++)
+	{
+		v3CommBuf.tx[v3CommBuf.txhead++] = buf[i];
       //v3CommBuf.txhead &= V3BUFMASK  // not needed for 256 size circular buffer
-      if (v3CommBuf.txhead==v3CommBuf.txtail) return(1);  // buffer overflow
-   }
-   
-   return(0);
+		if (v3CommBuf.txhead==v3CommBuf.txtail) return(1);  // buffer overflow
+	}
+#else
+	U8 i;
+	char charbuf[512];
+	if (v3status.spp != STATE_SPP_MODE) return(0xFF);
+	for(i = 0; i < n; i++)
+	{
+		charbuf[i] = buf[i];
+	}
+	BLE_AddtoQueue(charbuf, 512, n, __LINE__);
+#endif
+	return(0);
 }
 
 
@@ -160,7 +169,10 @@ U8  qSize, buftail, i;
    
    buftail = v3CommBuf.rxtail;
    
-   for (i=0; i< V3_HDR_SIZE;i++) v3msgU.v3_buf8[i] = v3CommBuf.rx[buftail++];  //get header without effecting Q
+   for (i=0; i< V3_HDR_SIZE;i++)
+   {
+	   v3msgU.v3_buf8[i] = v3CommBuf.rx[buftail++];  //get header without effecting Q
+   }
    // no need to mask tail because size is 256 and 8 bit variable.
    
    // Check for start token, index buffer by one if token not seen
@@ -180,8 +192,10 @@ U8  qSize, buftail, i;
 
 // now message is in UNION, process message  
 #if 1
-   if ( v3_get_sum( &v3msgU )) v3_proc_message(&v3msgU);  //checksum is correct
-      else v3_nack_msg( &v3msgU );  //checksum is not correct
+   if ( v3_get_sum( &v3msgU ))
+	   v3_proc_message(&v3msgU);  //checksum is correct
+   else
+	   v3_nack_msg( &v3msgU );    //checksum is not correct
 #else 
    v3_proc_message(&v3msgU);
 #endif

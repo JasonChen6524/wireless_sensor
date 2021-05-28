@@ -34,6 +34,9 @@
 #include "v3.h"
 #include "i2c.h"
 
+#include "queue.h"
+//#include "DSInterface.h"
+
 /***************************************************************************************************
   Local Macros and Definitions
  **************************************************************************************************/
@@ -50,10 +53,12 @@
 #define TIC_TIMER_HANDLE 1
 #define OS_TIMER_HANDLE 2
 
-
+//bool dddd = 0;
 #define TIC_TIMER_CONST 32768
 #define TIC_TIMER_PERSEC 10
 
+struct queue_t BLEQUEUE;
+static uint8_t BLEOutBuffer[BLE_NOTIFY_CHAR_ARR_SIZE * MAX_BLE_QUEUE];
 
 enum
 {
@@ -99,6 +104,7 @@ static uint8 boot_to_dfu = 0;
 
 static void reset_variables()
 {
+	int ret;
 	_conn_handle = 0xFF;
 	_main_state = STATE_ADVERTISING;
    v3status.spp = STATE_ADVERTISING;
@@ -112,7 +118,74 @@ static void reset_variables()
    v3CommBuf.rxtail = 0;
    v3CommBuf.txhead = 0;
    v3CommBuf.txtail = 0;
+
+	ret = queue_init(&BLEQUEUE, BLEOutBuffer, BLE_NOTIFY_CHAR_ARR_SIZE, BLE_NOTIFY_CHAR_ARR_SIZE * MAX_BLE_QUEUE);
+	if(ret != 0)
+		printLog("queue_init has failed\r\n");
 }
+
+
+//DSInterface dsInterface(&microUSB);
+
+
+static int BLE_TransferMesSamplesFromQueue(void)
+{
+	int ret;
+	uint16 result;
+	uint8_t data_transfer[BLE_NOTIFY_CHAR_ARR_SIZE];
+
+	//printLog("BLE data \r\n");
+	if (BLEQUEUE.num_item >= 1)
+	{
+		ret = dequeue(&BLEQUEUE, data_transfer);
+		if(ret < 0) return 0;
+		printLog("dequeued data for tx, %d remain\r\n", BLEQUEUE.num_item);                           // Modified by Jason
+		do {
+		  //result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
+			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_notifyChar, BLE_NOTIFY_CHAR_ARR_SIZE, data_transfer)->result;
+			_sCounters.num_writes++;
+		} while(result == bg_err_out_of_memory);
+
+		if (result != 0) {
+			printLog("Unexpected error: %x\r\n", result);
+		} else {
+			_sCounters.num_pack_sent++;
+			_sCounters.num_bytes_sent += BLE_NOTIFY_CHAR_ARR_SIZE;
+		}
+	}
+
+	return 0;
+}
+
+bool BLE_Interface_Exists(void)
+{
+	//return (bleState == BLE_CONNECTED);
+	return (v3status.spp == STATE_SPP_MODE);
+}
+
+int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, int32_t line) {
+
+	int ret = 0;
+	//printf("size is: %d\r\n", size);
+	// TODO: Append a known character to the byte array in case size is
+	// less than 20 bytes
+	while ((data_size % BLE_NOTIFY_CHAR_ARR_SIZE) && data_size < buf_size)
+		data_transfer[data_size++] = 0;
+	//mxm_assert_msg(!(data_size % BLE_NOTIFY_CHAR_ARR_SIZE), "BLE packet size must be multiple of 32 bytes");
+
+	while(data_size > 0){
+		ret = enqueue(&BLEQUEUE, data_transfer);
+		data_size -= BLE_NOTIFY_CHAR_ARR_SIZE;
+		data_transfer += BLE_NOTIFY_CHAR_ARR_SIZE;
+	}
+
+	if(ret != 0)
+		printLog("BLE_AddtoQueue has failed\r\n");
+    printLog("BLE_AddtoQueue, line=%d\r\n", (int)line);                         // Added by Jason
+	return ret;
+}
+
+
 
 static void send_spp_msg()
 {
@@ -136,7 +209,8 @@ static void send_spp_msg()
 	if (len > 0) {
 		// Stack may return "out-of-memory" error if the local buffer is full -> in that case, just keep trying until the command succeeds
 		do {
-			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
+			//result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
+			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_notifyChar, len, data)->result;
 			_sCounters.num_writes++;
 		} while(result == bg_err_out_of_memory);
 
@@ -174,18 +248,23 @@ U8 sectic = TIC_TIMER_PERSEC;
 
    //bpt_main();   // For Bio-Sensor estimation -
 
-    if(_main_state == STATE_SPP_MODE) {
+    if(_main_state == STATE_SPP_MODE)
+    {
     	/* If SPP data mode is active, use non-blocking gecko_peek_event() */
     	evt = gecko_peek_event();
 
-    	if(evt == NULL) {
+    	if(evt == NULL)
+    	{
     		/* No stack events to be handled -> send data from local TX buffer */
-    	//send_spp_data();
-         send_spp_msg(); // send V3 Message, if any from circular buffer
-    		recv_spp_msg(); // receive V3 Message, if any from circular buffer
-         continue;  		// Jump directly to next iteration i.e. call gecko_peek_event() again
+    		//send_spp_data();
+    	    //send_spp_msg();                             // send V3 Message, if any from circular buffer
+    	    BLE_TransferMesSamplesFromQueue();
+    	    recv_spp_msg();                             // receive V3 Message, if any from circular buffer
+    		continue;  		                            // Jump directly to next iteration i.e. call gecko_peek_event() again
     	}
-    } else {
+    }
+    else
+    {
 //      /* if there are no events pending then the next call to gecko_wait_event() may cause
 //      * device go to deep sleep. Make sure that debug prints are flushed before going to sleep */
 //      if (!gecko_event_pending()){flushLog();}
@@ -267,6 +346,8 @@ U8 sectic = TIC_TIMER_PERSEC;
 
          reset_variables();
 
+         queue_reset(&BLEQUEUE);
+
         /* Check if need to boot to OTA DFU mode */
         if (boot_to_dfu) {
           /* Enter to OTA DFU mode */
@@ -289,14 +370,23 @@ U8 sectic = TIC_TIMER_PERSEC;
           /* Set flag to enter to OTA mode */
           boot_to_dfu = 1;
           /* Send response to Write Request */
-          gecko_cmd_gatt_server_send_user_write_response(
-            evt->data.evt_gatt_server_user_write_request.connection,
-            gattdb_ota_control,
-            bg_err_success);
+          //gecko_cmd_gatt_server_send_user_write_response(
+          //  evt->data.evt_gatt_server_user_write_request.connection,
+          //  gattdb_ota_control,
+          //  bg_err_success);
 
           /* Close connection to enter to DFU OTA mode */
-          gecko_cmd_le_connection_close(evt->data.evt_gatt_server_user_write_request.connection);
+            gecko_cmd_le_connection_close(evt->data.evt_gatt_server_user_write_request.connection);
+        	//printLog("gattdb_ota_control: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
         }
+        else
+        {
+        	printLog("unknown: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
+        }
+        /* Send response to Write Request */
+        gecko_cmd_gatt_server_send_user_write_response(evt->data.evt_gatt_server_user_write_request.connection,
+        		                                       evt->data.evt_gatt_server_user_write_request.characteristic,
+													   bg_err_success);
         break;
 
       case gecko_evt_gatt_server_characteristic_status_id:
@@ -304,7 +394,8 @@ U8 sectic = TIC_TIMER_PERSEC;
          struct gecko_msg_gatt_server_characteristic_status_evt_t *pStatus;
          pStatus = &(evt->data.evt_gatt_server_characteristic_status);
 
-         if (pStatus->characteristic == gattdb_gatt_spp_data) {
+       //if (pStatus->characteristic == gattdb_gatt_spp_data) {
+         if (pStatus->characteristic == gattdb_notifyChar) {
             if (pStatus->status_flags == gatt_server_client_config) {
                // Characteristic client configuration (CCC) for spp_data has been changed
                if (pStatus->client_config_flags == gatt_notification) {
@@ -320,29 +411,63 @@ U8 sectic = TIC_TIMER_PERSEC;
                   v3status.spp = STATE_CONNECTED;
                   //SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
                }
-
     		}
     	}
     }
     break;
 
    case gecko_evt_gatt_server_attribute_value_id:
-    {
-    	 for(i=0;i<evt->data.evt_gatt_server_attribute_value.value.len;i++) {
-    		 //USART_Tx(RETARGET_UART, evt->data.evt_gatt_server_attribute_value.value.data[i]);
-          v3CommBuf.rx[v3CommBuf.rxhead++]  = evt->data.evt_gatt_server_attribute_value.value.data[i];
-          if(v3CommBuf.rxhead == v3CommBuf.rxtail) 
-          {
-             // make error condition for receive buffer overflow
-             break;
-          }
-    	 
-       }
+   {
+       if(evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_configRWChar)
+       {
+    	   int x, len;
 
-    	 _sCounters.num_pack_received++;
-    	 _sCounters.num_bytes_received += evt->data.evt_gatt_server_attribute_value.value.len;
-    }
-    break;
+    	   len = evt->data.evt_gatt_server_attribute_value.value.len;
+    	   printLog("gattdb_configRWChar: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+
+    	   printLog("BLE_I[Line:%d]: data RECV: len=%d, data-->", __LINE__, len);
+    	   for(int x=0; x < len; x++)
+    	   {
+    		 //if ((BLE_DS_INTERFACE != NULL) && (params->data[x] != 0))
+    		   if (evt->data.evt_gatt_server_attribute_value.value.data[x] != 0)
+    		   {
+    			   //BLE_DS_INTERFACE_build_command((char)evt->data.evt_gatt_server_attribute_value.value.data[x]);
+    		   }
+    		   //if(params->data[x] == 0)
+    		   //    printf("00");
+    		   //else if(params->data[x] < 16)
+    		   //    printf("0%x", params->data[x]);
+    		   //else
+    		   //    printf("%x", params->data[x]);
+    	   }
+    	   //printf("\n\r");                                                          // Commented by Jason
+    	   for(x=0; x < len; x++)                                                     // Added by Jason
+    	   {
+    		   printf("%c", evt->data.evt_gatt_server_attribute_value.value.data[x]); // Added by Jason
+    	   }                                                                          // Added by Jason
+    	   printf("\n\r");                                                            // Added by Jason
+       }
+       else if(evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_gatt_spp_data)
+       {
+    	   for(i=0; i<evt->data.evt_gatt_server_attribute_value.value.len; i++)
+    	   {
+    		   v3CommBuf.rx[v3CommBuf.rxhead++]  = evt->data.evt_gatt_server_attribute_value.value.data[i];
+    		   if(v3CommBuf.rxhead == v3CommBuf.rxtail)
+    		   {
+    			   // make error condition for receive buffer overflow
+    			   break;
+    		   }
+    	   }
+    	   _sCounters.num_pack_received++;
+    	   _sCounters.num_bytes_received += evt->data.evt_gatt_server_attribute_value.value.len;
+    	   printLog("gattdb_gatt_spp_data: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+       }
+       else
+       {
+    	   printLog("Unknown_config: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+       }
+   }
+   break;
 
      /* Software Timer event */
    case gecko_evt_hardware_soft_timer_id:
@@ -377,7 +502,7 @@ U8 sectic = TIC_TIMER_PERSEC;
          else  bpt_main_reset();
          #endif
          
-         if ((v3status.conn & v3PINSBIO)==0) bpt_main();  // call if biosensor is sensor present
+         //if ((v3status.conn & v3PINSBIO)==0) bpt_main();  // call if biosensor is sensor present
 
          if (v3sleep.sleepsec) 
          {
