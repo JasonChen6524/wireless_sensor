@@ -35,7 +35,8 @@
 #include "i2c.h"
 
 #include "queue.h"
-//#include "DSInterface.h"
+#include "DSInterface.h"
+#include "peripherals.h"
 
 /***************************************************************************************************
   Local Macros and Definitions
@@ -139,7 +140,7 @@ static int BLE_TransferMesSamplesFromQueue(void)
 	{
 		ret = dequeue(&BLEQUEUE, data_transfer);
 		if(ret < 0) return 0;
-		printLog("dequeued data for tx, %d remain\r\n", BLEQUEUE.num_item);                           // Modified by Jason
+		pr_debug("dequeued data for tx, %d remain\r\n", BLEQUEUE.num_item);                           // Modified by Jason
 		do {
 		  //result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_notifyChar, BLE_NOTIFY_CHAR_ARR_SIZE, data_transfer)->result;
@@ -147,7 +148,7 @@ static int BLE_TransferMesSamplesFromQueue(void)
 		} while(result == bg_err_out_of_memory);
 
 		if (result != 0) {
-			printLog("Unexpected error: %x\r\n", result);
+			pr_err("Unexpected error: %x\r\n", result);
 		} else {
 			_sCounters.num_pack_sent++;
 			_sCounters.num_bytes_sent += BLE_NOTIFY_CHAR_ARR_SIZE;
@@ -180,14 +181,14 @@ int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, 
 	}
 
 	if(ret != 0)
-		printLog("BLE_AddtoQueue has failed\r\n");
-    printLog("BLE_AddtoQueue, line=%d\r\n", (int)line);                         // Added by Jason
+		pr_err("BLE_AddtoQueue has failed\r\n");
+    pr_info("BLE_AddtoQueue, line=%d\r\n", (int)line);                         // Added by Jason
 	return ret;
 }
 
 
 
-static void send_spp_msg()
+void send_spp_msg()
 {
 	uint8 len = 0;
 	uint8 data[256];
@@ -431,7 +432,7 @@ U8 sectic = TIC_TIMER_PERSEC;
     		 //if ((BLE_DS_INTERFACE != NULL) && (params->data[x] != 0))
     		   if (evt->data.evt_gatt_server_attribute_value.value.data[x] != 0)
     		   {
-    			   //BLE_DS_INTERFACE_build_command((char)evt->data.evt_gatt_server_attribute_value.value.data[x]);
+    			   DSInterface_BuildCommand((char)evt->data.evt_gatt_server_attribute_value.value.data[x]);
     		   }
     		   //if(params->data[x] == 0)
     		   //    printf("00");

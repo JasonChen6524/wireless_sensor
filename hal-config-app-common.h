@@ -31,7 +31,7 @@
 #define HAL_PA_POWER                                  (252)
 #define HAL_PA_CURVE_HEADER                            "pa_curves_efr32.h"
 
-#warning "Make sure BSP_PA_VOLTAGE corresponds to the actual board design!"
+//#warning "Make sure BSP_PA_VOLTAGE corresponds to the actual board design!"
 #ifdef FEATURE_PA_INPUT_FROM_VBAT
 // PAVDD is fed from battery voltage
 #define BSP_PA_VOLTAGE                                (3300)

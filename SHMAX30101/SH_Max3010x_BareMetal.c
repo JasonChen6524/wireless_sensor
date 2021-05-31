@@ -597,7 +597,7 @@ int SH_Max3010x_default_init( const int algoExecutionMode, const int agc_usage )
 		{
 
 			status =  sh_enable_algo(SH_ALGOIDX_AGC, SSAGC_MODE1_DATASIZE);
-			if (status == SS_SUCCESS)
+			if (status == SS_SUCCESS1)
 					p_glbl_max3010x_status_track->algo_enabled_mode[SH_ALGOIDX_AGC] = 0x01;
 			else {
 				printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
@@ -609,7 +609,7 @@ int SH_Max3010x_default_init( const int algoExecutionMode, const int agc_usage )
 
 	    }else {
 			status = sh_disable_algo(SH_ALGOIDX_AGC);
-			if (status != SS_SUCCESS) {
+			if (status != SS_SUCCESS1) {
 				printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
 				printLog("FAILED at line %d - agc_enabled \n", __LINE__);
 				//sh_clear_mfio_event_flag();
@@ -666,7 +666,7 @@ int SH_Max3010x_algo_start( const int algoExecutionMode)                  // Add
     sh_disable_irq_mfioevent();
 
     status = sh_sensor_enable(SH_SENSORIDX_MAX30101, SSMAX30101_MODE1_DATASIZE, SH_INPUT_DATA_DIRECT_SENSOR);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
     	printLog("FAILED at max3010x sensor init line %d\n", __LINE__);
     	sh_enable_irq_mfioevent();
@@ -677,7 +677,7 @@ int SH_Max3010x_algo_start( const int algoExecutionMode)                  // Add
 
     // DEBUG: Check this function again!
     status = sh_enable_algo_withmode(SH_ALGOIDX_BPT, algoExecutionMode ,SSBPT_MODE1_2_DATASIZE);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
     	printLog("FAILED at bpt algo init line %d\n", __LINE__);
     	sh_enable_irq_mfioevent();
@@ -700,7 +700,7 @@ int SH_Max3010x_sensor_enable(void)                                             
     sh_disable_irq_mfioevent();
 
     status = sh_sensor_enable02(SH_SENSORIDX_MAX30101, SSMAX30101_MODE1_DATASIZE, SH_INPUT_DATA_DIRECT_SENSOR);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	sh_enable_irq_mfioevent();
     	return COMM_GENERAL_ERROR;
     }
@@ -730,7 +730,7 @@ int SH_Max3010x_sensor_enable_status(void)                                      
     sh_disable_irq_mfioevent();
 
     status = sh_sensor_enable02_status(SH_SENSORIDX_MAX30101, SSMAX30101_MODE1_DATASIZE, SH_INPUT_DATA_DIRECT_SENSOR);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	sh_enable_irq_mfioevent();
     	return COMM_GENERAL_ERROR;
     }
@@ -752,7 +752,7 @@ int SH_Max3010x_algo_start_02( const int algoExecutionMode)                  // 
 
     // DEBUG: Check this function again!
     status = sh_enable_algo_withmode02(SH_ALGOIDX_BPT, algoExecutionMode ,SSBPT_MODE1_2_DATASIZE);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
     	printLog("FAILED at bpt algo init line %d\n", __LINE__);
     	sh_enable_irq_mfioevent();
@@ -775,7 +775,7 @@ int SH_Max3010x_algo_start_02_status( const int algoExecutionMode)              
     sh_disable_irq_mfioevent();
 
     status = sh_enable_algo_withmode_status02(SH_ALGOIDX_BPT, algoExecutionMode ,SSBPT_MODE1_2_DATASIZE);
-    if (status != SS_SUCCESS) {
+    if (status != SS_SUCCESS1) {
     	printLog("\r\n err=%d\r\n",  COMM_GENERAL_ERROR);
     	printLog("FAILED at bpt algo init line %d\n", __LINE__);
     	sh_enable_irq_mfioevent();
@@ -869,7 +869,7 @@ int SH_Max3010x_set_ppg_agcusage(const char *config_arg){
 	uint32_t val;
     if( sscanf(config_arg, "%*s %*s %*s %d", (int*)&val) == 1 ){  //Jason
     	is_agc_usage_required = (val == 0)? DISABLE_AGC_USAGE:ENABLE_AGC_USAGE;
-    	status =  SS_SUCCESS;
+    	status =  SS_SUCCESS1;
     }
 
     return status;  // if command error return -1 if operational error return >0 error
@@ -948,7 +948,7 @@ int SH_Max3010x_get_bpt_cal_index(const char *null_arg){
 	uint8_t  rxBuff[1*1 + 1];
 	uint32_t val[1];
 	status = sh_get_algo_cfg(SH_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_INDEX, &rxBuff[0], sizeof(rxBuff));
-    if( status == SS_SUCCESS) {
+    if( status == SS_SUCCESS1) {
 
     	val[0] =  rxBuff[0];
     	printLog(" \r\n cal_index: %u \r\n" , (unsigned int)val[0] );//Jason
@@ -979,12 +979,12 @@ int SH_Max3010x_get_bpt_calibration(const char *null_arg){
     uint8_t cal_result[CAL_DATA_SIZE_BYTES + STATUS_OFFSET_BYTE];
 
  	status = sh_get_algo_cfg(SH_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_result[0], sizeof(cal_result));
-    if( status == SS_SUCCESS){
+    if( status == SS_SUCCESS1){
 
     	printLog("\r\n VALUES of CALIBRATION= ");
     	unsigned int idx = 1; /*skip status byte*/
     	while( idx < sizeof(cal_result) ){
-    		printLog("%02X", cal_result[idx+1]);                                               // %2X ??
+    		//??printLog("%02X", cal_result[idx+1]);                                               // %2X ??
     		idx++;
     	}
 
@@ -1158,7 +1158,7 @@ int SH_Max3010x_set_bpt_spo2_coeffs(const char *config_arg){
     SERIALOUT(" \r\n"); */
 
     status = ssx_set_algo_cfg(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, (uint8_t*)coefs, sizeof(coefs));
-	if (status == SS_SUCCESS)
+	if (status == SS_SUCCESS1)
 		printLog("\r\n%s err=%d\r\n", config_arg, COMM_SUCCESS);
 	else
 		printLog("\r\n%s err=%d\r\n", config_arg, COMM_GENERAL_ERROR);
@@ -1175,7 +1175,7 @@ int SH_Max3010x_get_bpt_spo2_coeffs(const char *null_arg){
 	uint8_t  rxBuff[3*4 + 1];
 	uint32_t val[3];
 	status = sh_get_algo_cfg(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, &rxBuff[0], sizeof(rxBuff));
-    if( status == SS_SUCCESS) {
+    if( status == SS_SUCCESS1) {
 
     	val[0] =  (rxBuff[1]<< 24) +  (rxBuff[2]<< 16) + (rxBuff[3]<< 8) + (rxBuff[4]<< 0);
 		val[1] =  (rxBuff[5]<< 24) +  (rxBuff[6]<< 16) + (rxBuff[7]<< 8) + (rxBuff[8]<< 0);

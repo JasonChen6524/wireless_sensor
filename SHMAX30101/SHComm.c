@@ -152,7 +152,7 @@
 /*global buffer for sensor i2c commands+data*/
 uint8_t sh_write_buf[512 + 32];                                               // Buffer size changed from 512 to (512 + 128), 2021.02.25
 /*static*/ volatile bool m_irq_received    = false;
-static volatile bool mfio_int_happened = false;
+static volatile bool mfio_int_happened1 = false;
 
 /* sensor hub states */
 static bool sc_en     = false;
@@ -460,16 +460,16 @@ void sh_disable_irq_mfioevent(void)
  *       N/A
  **/
 bool sh_reset_mfio_irq(void){
-	bool ret = mfio_int_happened;
-	mfio_int_happened = false;
+	bool ret = mfio_int_happened1;
+	mfio_int_happened1 = false;
 	sh_disable_irq_mfioevent();
 	//irq_pin.fall(sh_irq_handler);
 	sh_enable_irq_mfioevent();
 	return ret;
 }
 
-void irq_handler_selftest(void){
-	mfio_int_happened = true;
+void sh_irq_handler_selftest(void){
+	mfio_int_happened1 = true;
 }
 
 void sh_mfio_selftest(void){
@@ -481,7 +481,7 @@ void sh_mfio_selftest(void){
 static bool in_bootldr;
 
 
-int in_bootldr_mode(void)
+int sh_in_bootldr_mode(void)
 {
 	uint8_t cmd_bytes[] = { SS_FAM_R_MODE, SS_CMDIDX_MODE };
 	uint8_t rxbuf[2] = { 0 };
@@ -489,7 +489,7 @@ int in_bootldr_mode(void)
 	int status = sh_read_cmd(&cmd_bytes[0], sizeof(cmd_bytes),
 			0, 0,
 			&rxbuf[0], sizeof(rxbuf), SS_DEFAULT_CMD_SLEEP_MS);
-	if (status != SS_SUCCESS)
+	if (status != SS_SUCCESS1)
 		return -1;
 
 	return (rxbuf[1] & SS_MASK_MODE_BOOTLDR);
@@ -504,7 +504,7 @@ int exit_from_bootloader(void)
 										 &data[0], 1 /*sizeof(data)*/,
 										 10*SS_DEFAULT_CMD_SLEEP_MS);
 
-	in_bootldr = (status == SS_SUCCESS) ? true : false;
+	in_bootldr = (status == SS_SUCCESS1) ? true : false;
 
 	return status;
 }
@@ -518,13 +518,14 @@ int stay_in_bootloader(void)
 			&cmd_bytes[0], sizeof(cmd_bytes),
 			&data[0], sizeof(data), SS_DEFAULT_CMD_SLEEP_MS);
 
-	in_bootldr = (status == SS_SUCCESS) ? true : false;
+	in_bootldr = (status == SS_SUCCESS1) ? true : false;
 	return status;
 }
 
-
+#if 0
 static void cfg_mfio(uint8_t dir)
 {
+#if 0
 	if (dir == PIN_INPUT) {
 		mfio_pin_input();
 		mfio_pin_mode_PullUp();
@@ -532,14 +533,16 @@ static void cfg_mfio(uint8_t dir)
 		sh_enable_irq_mfioevent();
 		mfio_pin_output();
 	}
+#endif
 }
+#endif
 
 int sh_reset_to_main_app(void)
 {
 	int status = -1;
 	sh_disable_irq_mfioevent();
 	if (ebl_mode == EBL_GPIO_TRIGGER_MODE) {
-
+#if 0
 		reset_pin_output();
 		cfg_mfio(PIN_OUTPUT);
 		mfio_pin_write(0);
@@ -554,13 +557,13 @@ int sh_reset_to_main_app(void)
 		wait_ms(2*SS_STARTUP_TO_MAIN_APP_TIME);
 		cfg_mfio(PIN_INPUT);
 		reset_pin_input();
-
+#endif
     	sh_enable_irq_mfioevent();
 		// Verify we exited bootloader mode
-		if (in_bootldr_mode() == 0)
-			status = SS_SUCCESS;
+		if (sh_in_bootldr_mode() == 0)
+			status = SS_SUCCESS1;
 		else
-			status = SS_ERR_UNKNOWN;
+			status = SS_ERR_UNKNOWN1;
 	}else{
 		status = exit_from_bootloader();
 		sh_enable_irq_mfioevent();
@@ -604,8 +607,8 @@ int sh_self_test(int idx, uint8_t *result, int sleep_ms){
 						     &rxbuf[0], sizeof(rxbuf),
 						     sleep_ms  );
 
-	if (status != SS_SUCCESS)
-		return SS_ERR_TRY_AGAIN;
+	if (status != SS_SUCCESS1)
+		return SS_ERR_TRY_AGAIN1;
 
     result[0] = rxbuf[1];
 	return status;
@@ -639,7 +642,7 @@ const char* sh_get_hub_fw_version(void)
 							  &rxbuf[0], sizeof(rxbuf),
 							  SS_DEFAULT_CMD_SLEEP_MS );
 
-    if (status == SS_SUCCESS) {
+    if (status == SS_SUCCESS1) {
         snprintf(fw_version, sizeof(fw_version),
             "%d.%d.%d", rxbuf[1], rxbuf[2], rxbuf[3]);
 	}
@@ -677,7 +680,7 @@ const char* sh_get_hub_algo_version(void)
                               &rxbuf[0], sizeof(rxbuf),
 						      SS_DEFAULT_CMD_SLEEP_MS   );
 
-    if (status == SS_SUCCESS) {
+    if (status == SS_SUCCESS1) {
         snprintf(algo_version, sizeof(algo_version),
             "%d.%d.%d", rxbuf[1], rxbuf[2], rxbuf[3]);
 
@@ -705,7 +708,7 @@ int sh_get_log_len(int *log_len)
 								   &rxbuf[0], sizeof(rxbuf),
 								   SS_DEFAULT_CMD_SLEEP_MS   );
 
-	if (status == SS_SUCCESS) {
+	if (status == SS_SUCCESS1) {
 		logLen = (rxbuf[1] << 8) | rxbuf[0];
 	}
 	*log_len = logLen;
@@ -745,23 +748,23 @@ int sh_write_cmd( uint8_t *tx_buf,
     	ret = m_i2cBus_write(SS_I2C_8BIT_SLAVE_ADDR, (U8*)tx_buf, tx_len, false);
 	}
     if(ret != 0)
-       return SS_ERR_UNAVAILABLE;
+       return SS_ERR_UNAVAILABLE1;
 
     wait_ms(sleep_ms);
 
     char status_byte;
     ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-	bool try_again = (status_byte == SS_ERR_TRY_AGAIN);
+	bool try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	while ((ret != 0 || try_again) && retries-- > 0)
 	{
 	 	wait_ms(sleep_ms);
     	ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-		try_again = (status_byte == SS_ERR_TRY_AGAIN);
+		try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	}
 
     if(ret != 0 || try_again)
     {
-        return SS_ERR_UNAVAILABLE;
+        return SS_ERR_UNAVAILABLE1;
     }
 
 	return (int) (SS_STATUS)status_byte;
@@ -808,20 +811,20 @@ int sh_read_cmd( uint8_t *cmd_bytes,
 
 	}
     if (ret != 0)
-    	return SS_ERR_UNAVAILABLE;
+    	return SS_ERR_UNAVAILABLE1;
 
 
     wait_ms(sleep_ms);
 
     ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)rxbuf, rxbuf_sz);
-	bool try_again = (rxbuf[0] == SS_ERR_TRY_AGAIN);
+	bool try_again = (rxbuf[0] == SS_ERR_TRY_AGAIN1);
 	while ((ret != 0 || try_again) && retries-- > 0) {
 		wait_ms(sleep_ms);
     	ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)rxbuf, rxbuf_sz);
-		try_again = (rxbuf[0] == SS_ERR_TRY_AGAIN);
+		try_again = (rxbuf[0] == SS_ERR_TRY_AGAIN1);
 	}
     if (ret != 0 || try_again)
-        return SS_ERR_UNAVAILABLE;
+        return SS_ERR_UNAVAILABLE1;
 
     return (int) ((SS_STATUS)rxbuf[0]);
 }
@@ -965,7 +968,7 @@ int sh_ss_comm_check(void){
 							  SS_DEFAULT_CMD_SLEEP_MS );
 
 	int tries = 4;
-	while (status == SS_ERR_TRY_AGAIN && tries--) {
+	while (status == SS_ERR_TRY_AGAIN1 && tries--) {
 		wait_ms(1000);
 		status = sh_read_cmd( &ByteSeq[0], sizeof(ByteSeq),
 									  0, 0,
@@ -1120,7 +1123,7 @@ int sh_sensor_enable02( int idx , int sensorSampleSz , uint8_t ext_mode ){
     	ret = m_i2cBus_write(SS_I2C_8BIT_SLAVE_ADDR, (U8*)ByteSeq, tx_len, false);
 	}
     if(ret != 0)
-       return SS_ERR_UNAVAILABLE;
+       return SS_ERR_UNAVAILABLE1;
     return 0x00;
 #if 0
     wait_ms(1 * SS_ENABLE_SENSOR_SLEEP_MS);                                                                       // 5  ----> 1, 2021.03.04
@@ -1158,17 +1161,17 @@ int sh_sensor_enable02_status( int idx , int sensorSampleSz , uint8_t ext_mode )
 
     char status_byte;
     ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-	bool try_again = (status_byte == SS_ERR_TRY_AGAIN);
+	bool try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	while ((ret != 0 || try_again) && retries-- > 0)
 	{
 	 	wait_ms(1 * SS_ENABLE_SENSOR_SLEEP_MS);                                                                   // 5  ----> 1, 2021.03.04
     	ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-		try_again = (status_byte == SS_ERR_TRY_AGAIN);
+		try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	}
 
     if(ret != 0 || try_again)
     {
-        return SS_ERR_UNAVAILABLE;
+        return SS_ERR_UNAVAILABLE1;
     }
 
 	if(status_byte == 0x00){
@@ -1275,7 +1278,7 @@ int sh_enable_algo_withmode(int idx, int mode, int algoSampleSz)
 
 	int status = sh_write_cmd_with_data(&cmd_bytes[0], sizeof(cmd_bytes), 0, 0, SS_ENABLE_ALGO_SLEEP_MS /*25 * SS_ENABLE_SENSOR_SLEEP_MS*/);
 
-	if (status == SS_SUCCESS) {
+	if (status == SS_SUCCESS1) {
 		is_algo_enabled[idx]   = ENABLED;
 		algo_sample_sz[idx]    = algoSampleSz;
 		enabled_algo_mode[idx] = mode;
@@ -1302,23 +1305,23 @@ int sh_write_cmd_with_data02(uint8_t *cmd_bytes,
     	ret = m_i2cBus_write(SS_I2C_8BIT_SLAVE_ADDR, (U8*)sh_write_buf, cmd_bytes_len + data_len, false);
 	}
     if(ret != 0)
-       return SS_ERR_UNAVAILABLE;
+       return SS_ERR_UNAVAILABLE1;
 
     wait_ms(cmd_delay_ms);
 
     char status_byte;
     ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-	bool try_again = (status_byte == SS_ERR_TRY_AGAIN);
+	bool try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	while ((ret != 0 || try_again) && retries-- > 0)
 	{
 	 	wait_ms(cmd_delay_ms);
     	ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-		try_again = (status_byte == SS_ERR_TRY_AGAIN);
+		try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	}
 
     if(ret != 0 || try_again)
     {
-        return SS_ERR_UNAVAILABLE;
+        return SS_ERR_UNAVAILABLE1;
     }
 
 	return (int) (SS_STATUS)status_byte;
@@ -1342,7 +1345,7 @@ int sh_enable_algo_withmode02(int idx, int mode, int algoSampleSz)
     	ret = m_i2cBus_write(SS_I2C_8BIT_SLAVE_ADDR, (U8*)sh_write_buf, cmd_bytes_len + 0, false);
 	}
     if(ret != 0)
-       return SS_ERR_UNAVAILABLE;
+       return SS_ERR_UNAVAILABLE1;
 
     return (int) (SS_STATUS)ret;
 }
@@ -1352,19 +1355,19 @@ int sh_enable_algo_withmode_status02(int idx, int mode, int algoSampleSz)
     char status_byte;
     int retries = SS_DEFAULT_RETRIES;
     int ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-	bool try_again = (status_byte == SS_ERR_TRY_AGAIN);
+	bool try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	while ((ret != 0 || try_again) && retries-- > 0)
 	{
 	 	wait_ms(SS_ENABLE_ALGO_SLEEP_MS);
     	ret = m_i2cBus_read(SS_I2C_8BIT_SLAVE_ADDR, (U8*)&status_byte, 1);
-		try_again = (status_byte == SS_ERR_TRY_AGAIN);
+		try_again = (status_byte == SS_ERR_TRY_AGAIN1);
 	}
 
     if(ret != 0 || try_again)
     {
-        return SS_ERR_UNAVAILABLE;
+        return SS_ERR_UNAVAILABLE1;
     }
-	if (status_byte == SS_SUCCESS) {
+	if (status_byte == SS_SUCCESS1) {
 		is_algo_enabled[idx]   = ENABLED;
 		algo_sample_sz[idx]    = algoSampleSz;
 		enabled_algo_mode[idx] = mode;
@@ -1579,7 +1582,7 @@ int sh_checkif_bootldr_mode(void)
 {
 	uint8_t hubMode;
 	int status = sh_get_sensorhub_operating_mode(&hubMode);
-	return (status != SS_SUCCESS)? -1:(hubMode & SS_MASK_MODE_BOOTLDR);
+	return (status != SS_SUCCESS1)? -1:(hubMode & SS_MASK_MODE_BOOTLDR);
 }
 
 int sh_get_bootloader_pagesz(int *pagesz){
@@ -1689,7 +1692,7 @@ int sh_get_ss_fw_version(uint8_t *fwDesciptor  , uint8_t *descSize)
 	uint8_t cmd_bytes[2];
     uint8_t rxbuf[4];
 
-	int bootldr = in_bootldr_mode();
+	int bootldr = sh_in_bootldr_mode();
 
 	if (bootldr > 0) {
 		cmd_bytes[0] = SS_FAM_R_BOOTLOADER;

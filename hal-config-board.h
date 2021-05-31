@@ -51,7 +51,7 @@
 #define BSP_CLKOUT0_PORT                			(gpioPortD)
 // [CMU]$
 
-#warning "Following pin mappings need to be set for your custom board when using printf..>"
+//#warning "Following pin mappings need to be set for your custom board when using printf..>"
 
 #if 0
 // $[SERIAL]

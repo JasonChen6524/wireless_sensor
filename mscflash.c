@@ -44,7 +44,7 @@ struct statedata *pflashdata;
 		SE_eraseUserData();
       //MSC_ErasePage (puserdata);
 		//MSC_WriteWord (puserdata, &flashrom, (uint32_t) sizeof(flashrom));
-      SE_writeUserData(0,&flashrom, (uint32_t) sizeof(flashrom));
+      SE_writeUserData(0,(uint8_t*)&flashrom, (uint32_t) sizeof(flashrom));
 	}
 	
 	memcpy(&progdata, puserdata, sizeof (flashrom));   // copy flash to ram

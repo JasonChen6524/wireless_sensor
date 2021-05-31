@@ -105,7 +105,7 @@ static void initMcu_clocks(void)
 //RBG
   //CMU_ClockSelectSet(cmuClock_RTCC , cmuSelect_LFRCO);                                                        
 
-  #warning "WARNING: Use the CMU_LFXOInit() function only if the LFXO hardware is actually present!"
+  //#warning "WARNING: Use the CMU_LFXOInit() function only if the LFXO hardware is actually present!"
   // Initialize LFXO
   //CMU_LFXOInit_TypeDef lfxoInit = BSP_CLK_LFXO_INIT;
   //lfxoInit.capTune = BSP_CLK_LFXO_CTUNE;

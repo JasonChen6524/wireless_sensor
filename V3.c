@@ -148,7 +148,7 @@ U8 v3_XmitQ(U8 *buf, U8 n)
 	}
 #else
 	U8 i;
-	char charbuf[512];
+	U8 charbuf[512];
 	if (v3status.spp != STATE_SPP_MODE) return(0xFF);
 	for(i = 0; i < n; i++)
 	{
