@@ -37,6 +37,7 @@
 #include "queue.h"
 #include "DSInterface.h"
 #include "peripherals.h"
+#include "utils.h"
 
 /***************************************************************************************************
   Local Macros and Definitions
@@ -140,7 +141,7 @@ static int BLE_TransferMesSamplesFromQueue(void)
 	{
 		ret = dequeue(&BLEQUEUE, data_transfer);
 		if(ret < 0) return 0;
-		pr_debug("dequeued data for tx, %d remain\r\n", BLEQUEUE.num_item);                           // Modified by Jason
+		pr_info("dequeued data for tx, %d remain\r\n", BLEQUEUE.num_item);                           // Modified by Jason
 		do {
 		  //result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_notifyChar, BLE_NOTIFY_CHAR_ARR_SIZE, data_transfer)->result;
@@ -181,11 +182,15 @@ int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, 
 	}
 
 	if(ret != 0)
-		pr_err("BLE_AddtoQueue has failed\r\n");
+		printLog("BLE_AddtoQueue has failed, ret=%d, Line:%d\r\n", ret, __LINE__);
     pr_info("BLE_AddtoQueue, line=%d\r\n", (int)line);                         // Added by Jason
 	return ret;
 }
 
+void BLE_reset_queue(void){
+	queue_reset(&BLEQUEUE);
+    memset( BLEQUEUE.base, 0, BLEQUEUE.buffer_size);                                      // Added by Jason
+}
 
 
 void send_spp_msg()
@@ -248,6 +253,13 @@ U8 sectic = TIC_TIMER_PERSEC;
     struct gecko_cmd_packet* evt;
 
    //bpt_main();   // For Bio-Sensor estimation -
+    data_report_execute();
+
+    if(calibration_success)
+    {
+    	calibration_success = false;
+    	DSInterface_BuildCommand_itself();
+    }
 
     if(_main_state == STATE_SPP_MODE)
     {
@@ -260,7 +272,7 @@ U8 sectic = TIC_TIMER_PERSEC;
     		//send_spp_data();
     	    //send_spp_msg();                             // send V3 Message, if any from circular buffer
     	    BLE_TransferMesSamplesFromQueue();
-    	    recv_spp_msg();                             // receive V3 Message, if any from circular buffer
+    	    //recv_spp_msg();                             // receive V3 Message, if any from circular buffer
     		continue;  		                            // Jump directly to next iteration i.e. call gecko_peek_event() again
     	}
     }
@@ -316,7 +328,7 @@ U8 sectic = TIC_TIMER_PERSEC;
       case gecko_evt_le_connection_opened_id:
 
          _conn_handle = evt->data.evt_le_connection_opened.connection;
-         printLog("Connected\r\n");
+         printBleDebug("Connected\r\n");
          _main_state = STATE_CONNECTED;
          v3status.spp = STATE_CONNECTED;
 
@@ -328,7 +340,7 @@ U8 sectic = TIC_TIMER_PERSEC;
     	break;
 
       case gecko_evt_le_connection_parameters_id:
-         printLog("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
+         printBleDebug("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
     	break;
 
       case gecko_evt_gatt_mtu_exchanged_id:
@@ -336,16 +348,16 @@ U8 sectic = TIC_TIMER_PERSEC;
           * up to ATT_MTU-3 bytes can be sent at once  */
          _max_packet_size = evt->data.evt_gatt_mtu_exchanged.mtu - 3;
          _min_packet_size = _max_packet_size; /* Try to send maximum length packets whenever possible */
-         printLog("MTU exchanged: %d\r\n", evt->data.evt_gatt_mtu_exchanged.mtu);
+         printBleDebug("MTU exchanged: %d\r\n", evt->data.evt_gatt_mtu_exchanged.mtu);
     	break;
 
       case gecko_evt_le_connection_closed_id:
          printLog("DISCONNECTED!\r\n");
 
          /* Show statistics (RX/TX counters) after disconnect: */
-         printStats(&_sCounters);
+         //printStats(&_sCounters);
 
-         reset_variables();
+         //reset_variables();
 
          queue_reset(&BLEQUEUE);
 
@@ -378,11 +390,11 @@ U8 sectic = TIC_TIMER_PERSEC;
 
           /* Close connection to enter to DFU OTA mode */
             gecko_cmd_le_connection_close(evt->data.evt_gatt_server_user_write_request.connection);
-        	//printLog("gattdb_ota_control: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
+        	//printBleDebug("gattdb_ota_control: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
         }
         else
         {
-        	printLog("unknown: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
+        	printBleDebug("unknown: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_user_write_request.value.data[0], __LINE__);
         }
         /* Send response to Write Request */
         gecko_cmd_gatt_server_send_user_write_response(evt->data.evt_gatt_server_user_write_request.connection,
@@ -405,9 +417,9 @@ U8 sectic = TIC_TIMER_PERSEC;
                   //gecko_cmd_hardware_set_soft_timer(32768, TIC_TIMER_HANDLE, 0);
                   //SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
                   //initBoard();
-                  printLog("SPP Mode ON\r\n");
+                  printBleDebug("SPP Mode ON\r\n");
                } else {
-                  printLog("SPP Mode OFF\r\n");
+                  printBleDebug("SPP Mode OFF\r\n");
                   _main_state = STATE_CONNECTED;
                   v3status.spp = STATE_CONNECTED;
                   //SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
@@ -421,12 +433,12 @@ U8 sectic = TIC_TIMER_PERSEC;
    {
        if(evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_configRWChar)
        {
-    	   int x, len;
+    	   int len;
 
     	   len = evt->data.evt_gatt_server_attribute_value.value.len;
-    	   printLog("gattdb_configRWChar: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+    	   printBleDebug("gattdb_configRWChar: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
 
-    	   printLog("BLE_I[Line:%d]: data RECV: len=%d, data-->", __LINE__, len);
+    	   printBleDebug("BLE_I[Line:%d]: data RECV: len=%d, data-->", __LINE__, len);
     	   for(int x=0; x < len; x++)
     	   {
     		 //if ((BLE_DS_INTERFACE != NULL) && (params->data[x] != 0))
@@ -442,11 +454,11 @@ U8 sectic = TIC_TIMER_PERSEC;
     		   //    printf("%x", params->data[x]);
     	   }
     	   //printf("\n\r");                                                          // Commented by Jason
-    	   for(x=0; x < len; x++)                                                     // Added by Jason
-    	   {
-    		   printf("%c", evt->data.evt_gatt_server_attribute_value.value.data[x]); // Added by Jason
-    	   }                                                                          // Added by Jason
-    	   printf("\n\r");                                                            // Added by Jason
+    	   //for(x=0; x < len; x++)                                                     // Added by Jason
+    	   //{
+    	   //  printf("%c", evt->data.evt_gatt_server_attribute_value.value.data[x]); // Added by Jason
+    	   //}                                                                          // Added by Jason
+    	   //printf("\n\r");                                                            // Added by Jason
        }
        else if(evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_gatt_spp_data)
        {
@@ -461,11 +473,11 @@ U8 sectic = TIC_TIMER_PERSEC;
     	   }
     	   _sCounters.num_pack_received++;
     	   _sCounters.num_bytes_received += evt->data.evt_gatt_server_attribute_value.value.len;
-    	   printLog("gattdb_gatt_spp_data: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+    	   printBleDebug("gattdb_gatt_spp_data: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
        }
        else
        {
-    	   printLog("Unknown_config: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
+    	   printBleDebug("Unknown_config: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
        }
    }
    break;
@@ -489,7 +501,7 @@ U8 sectic = TIC_TIMER_PERSEC;
 
          if (sectic >= TIC_TIMER_PERSEC)
          {
-            v3_state(); // sequence main V3 state machine once per second
+            //v3_state(); // sequence main V3 state machine once per second
             sectic = 0;
          }
 
@@ -503,15 +515,17 @@ U8 sectic = TIC_TIMER_PERSEC;
          else  bpt_main_reset();
          #endif
          
-         //if ((v3status.conn & v3PINSBIO)==0) bpt_main();  // call if biosensor is sensor present
+         if ((v3status.conn & v3PINSBIO)==0) bpt_main();  // call if biosensor is sensor present
 
          if (v3sleep.sleepsec) 
          {
+#if 0
         	   v3_state(); // sequence main V3 state machine
         	   gecko_cmd_hardware_set_soft_timer(0, OS_TIMER_HANDLE, false);  // turn off timer
             gecko_cmd_hardware_set_soft_timer((v3sleep.sleepsec*TIC_TIMER_CONST), OS_TIMER_HANDLE, false);  // set new sleep timer
             v3sleep.sleepsec = 0;  // clear flag 
-            sectic = TIC_TIMER_PERSEC;   // Force state machine to be called next entry     
+            sectic = TIC_TIMER_PERSEC;   // Force state machine to be called next entry
+#endif
          }
 
          break;

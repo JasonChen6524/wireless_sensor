@@ -33,8 +33,10 @@
 
 #ifndef _MAXIMSENSOR_H_
 #define _MAXIMSENSOR_H_
-//#include "mbed.h"
-#include "stdint.h"
+
+#include <stdint.h>
+#include "app.h"
+
 //#include <list>
 
 
@@ -49,10 +51,23 @@ typedef struct {
  * @details	MaximSensor includes base functions for to create new
  *	sensor classes. All sensor classes should implement this class.
  */
-#if 0
-class MaximSensor
+typedef void (*rx_data_callback1)(uint8_t *);
+typedef struct {
+	int data_size;
+	rx_data_callback1 rx_data_parser;
+} ss_data_req1;
+
+typedef int  (*readRegister_callback)(uint8_t, uint8_t *, int);
+typedef int  (*writeRegister_callback)(uint8_t, uint8_t *, int);
+typedef void (*sensor_enable_callback) (uint8_t);
+typedef int  (*dump_registers_callback) (addr_val_pair *);
+typedef const char* (*get_sensor_part_name_callback)(void);
+typedef char* (*get_sensor_algo_ver_callback)(void);
+
+#if 1
+typedef struct
 {
-public:
+//public:
 	/* PUBLIC FUNCTION DECLARATIONS */
 	/**
 	* @brief	Reads from register.
@@ -64,7 +79,8 @@ public:
 	*
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int readRegister(uint8_t reg, uint8_t *data, int len);
+	//int readRegister(uint8_t reg, uint8_t *data, int len);
+	readRegister_callback readRegister;
 
 	/**
 	* @brief	Writes data to Maxim Sensor register.
@@ -75,7 +91,8 @@ public:
 	*
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int writeRegister(uint8_t reg,	const uint8_t data);
+	//int writeRegister(uint8_t reg,	const uint8_t data);
+	writeRegister_callback writeRegister;
 
 	/**
 	* @brief	Get Maxim Sensor part and revision info.
@@ -87,7 +104,8 @@ public:
 	*
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int get_part_info(uint8_t *part_id,	uint8_t *rev_id);
+	//int get_part_info(uint8_t *part_id,	uint8_t *rev_id);
+	get_part_info_callback get_part_info;
 
 	/**
 	* @brief	Enables Maxim Sensor.
@@ -97,7 +115,9 @@ public:
 	*
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int sensor_enable(int enable);
+	//int sensor_enable(int enable);
+	sensor_enable_callback sensor_enable;
+
 
 	/**
 	* @brief	Enables AGC.
@@ -108,28 +128,32 @@ public:
 	*
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int agc_enable(int agc_enable);
+	//int agc_enable(int agc_enable);
+	sensor_enable_callback agc_enable;
 
 	/**
 	* @brief	Get sensor part name.
 	*
 	* @returns	Sensor part name string.
 	*/
-	virtual const char *get_sensor_part_name();
+	//const char *get_sensor_part_name();
+	get_sensor_part_name_callback get_sensor_part_name;
 
 	/**
 	* @brief	Get sensor algorithm version.
 	*
 	* @returns	Sensor algorithm version string.
 	*/
-	virtual const char *get_sensor_algo_ver();
+	//char *get_sensor_algo_ver();
+	get_sensor_algo_ver_callback get_sensor_algo_ver;
 
 	/**
 	* @brief	Get sensor name.
 	*
 	* @returns	Sensor name string.
 	*/
-	virtual const char *get_sensor_name();
+	//const char *get_sensor_name();
+	get_sensor_part_name_callback get_sensor_name;
 
 	/**
 	* @brief	Dump Maxim Sensor registers.
@@ -138,48 +162,10 @@ public:
 	* @param[in]    reg_values Pointer to array of 256 addr_val_pairs
 	* @returns	0 on success, negative error code on failure.
 	*/
-	virtual int dump_registers(addr_val_pair *reg_values)=0;
+	//int dump_registers(addr_val_pair *reg_values)=0;
+	dump_registers_callback dump_registers;
 
-	// *********************** Maxim Sensor ECG Max30001 related functions ***********************
-	virtual int MS_Max30001_ECG_InitStart(uint8_t En_ecg, uint8_t Openp, uint8_t Openn,
-						 uint8_t Pol, uint8_t Calp_sel, uint8_t Caln_sel,
-										 uint8_t E_fit, uint8_t Rate, uint8_t Gain,
-										 uint8_t Dhpf, uint8_t Dlpf);
-
-	virtual int MS_Max30001_ECG_Stop();
-
-	// ECG Max30001 RtoR Initialization Function
-	virtual  int MS_Max30001_RtoR_InitStart(uint8_t En_rtor, uint8_t Wndw, uint8_t Gain,
-			uint8_t Pavg, uint8_t Ptsf, uint8_t Hoff,
-			uint8_t Ravg, uint8_t Rhsf, uint8_t Clr_rrint);
-
-	virtual int MS_Max30001_RtoR_Stop();
-
-	// Max30001 Interrupt Assignment Function
-	virtual int MS_max30001_INT_assignment(uint8_t en_enint_loc,     uint8_t en_eovf_loc,  uint8_t en_fstint_loc,
-										   uint8_t en_dcloffint_loc, uint8_t en_bint_loc,  uint8_t en_bovf_loc,
-										   uint8_t en_bover_loc,     uint8_t en_bundr_loc, uint8_t en_bcgmon_loc,
-										   uint8_t en_pint_loc,      uint8_t en_povf_loc,  uint8_t en_pedge_loc,
-										   uint8_t en_lonint_loc,    uint8_t en_rrint_loc, uint8_t en_samp_loc,
-										   uint8_t intb_Type,        uint8_t int2b_Type);
-
-	virtual int MS_max30001readRegister(uint8_t addr, uint32_t *return_data);
-
-	virtual int MS_max30001writeRegister(uint8_t addr, uint32_t data);
-
-	virtual int MS_max30001sync();
-
-	// *********************** end of Maxim Sensor ECG Max30001 related functions ****************
-
-
-
-	// *********************** Max30205 related functions ***********************
-
-
-	// *********************** end of Max30205 related functions ****************
-
-
-};
+} MaximSensor;
 #endif
 
 #endif /* _MAXIMSENSOR_H_ */

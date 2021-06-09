@@ -79,12 +79,18 @@
 
 #include "Global.h"
 #include "SHComm.h"
-#include "SH_Max3010x_BareMetal.h"
+//#include "SH_Max3010x_BareMetal.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 //#include "app.h"
 #include "V3.h"
 #include "sl_sleeptimer.h"
+
+#include "SSMAX30101Comm.h"
+#include "DSInterface.h"
+#include "SSInterface.h"
+#include "utils.h"
 
 #define WAIT_SENSORHUB_STABLE_BOOTUP_MS  ((uint32_t)2000)
 
@@ -100,7 +106,7 @@ demo_appstate_t appState  = ST_COMMAND_MODE;
 //static demo_appstate_t appPrevState;     Jason
 
 extern uint8_t  bptMesurementProgress;
-
+#if 0
 static struct{
 	uint32_t user_med;
 	uint32_t user_norest;
@@ -130,7 +136,7 @@ static struct{
      {0x606F0200,  0x121DCBFF,  0x7BF3AB00},
 	 {0}
 };
-
+#endif
 //static uint8_t hostOperatingMode = HOSTMODEAPPLICATION;
 
 sl_sleeptimer_timer_handle_t bpt_timer;
@@ -178,17 +184,98 @@ void calibrationTimer_stop(void)
 const char *fw_version;
 uint32_t count_tick_last = 0;
 
+const char* myget_ss_fw_version(int bootldr)
+{
+    uint8_t cmd_bytes[2];
+    uint8_t rxbuf[4];
+
+    static char fw_version[32] = "Unknown SS SENSORHUB";
+	//int bootldr = ss_in_bootldr_mode();
+
+	if (bootldr > 0) {
+		cmd_bytes[0] = SS_FAM_R_BOOTLOADER;
+		cmd_bytes[1] = SS_CMDIDX_BOOTFWVERSION;
+	} else if (bootldr == 0) {
+		cmd_bytes[0] = SS_FAM_R_IDENTITY;
+		cmd_bytes[1] = SS_CMDIDX_FWVERSION;
+	} else {
+		return "Unknown FW";
+	}
+
+    SS_STATUS status = read_cmd(
+             &cmd_bytes[0], ARRAY_SIZE(cmd_bytes),
+             0, 0,
+             &rxbuf[0], ARRAY_SIZE(rxbuf), SS_DEFAULT_CMD_SLEEP_MS);
+
+    if (status == SS_SUCCESS) {
+        snprintf(fw_version, sizeof(fw_version),
+            "%d.%d.%d", rxbuf[1], rxbuf[2], rxbuf[3]);
+		printLog("fw_version:%s\r\n", fw_version);
+    }
+
+    return &fw_version[0];
+}
+
+const char* myget_ss_algo_version(int bootldr)
+{
+    uint8_t cmd_bytes[3];
+    uint8_t rxbuf[4];
+
+    static char algo_version[64] = "Unknown SS HUB ALGORITHMS";
+	//int bootldr = ss_in_bootldr_mode();
+
+	if (bootldr > 0) {
+		cmd_bytes[0] = SS_FAM_R_BOOTLOADER;
+		cmd_bytes[1] = SS_CMDIDX_BOOTFWVERSION;
+		cmd_bytes[2] = 0;
+	} else if (bootldr == 0) {
+		cmd_bytes[0] = SS_FAM_R_IDENTITY;
+		cmd_bytes[1] = SS_CMDIDX_ALGOVER;
+		cmd_bytes[2] = SS_CMDIDX_AVAILSENSORS;
+	} else {
+		return "Unknown ALGO";
+	}
+
+    SS_STATUS status = read_cmd(
+             &cmd_bytes[0], ARRAY_SIZE(cmd_bytes),
+             0, 0,
+             &rxbuf[0], ARRAY_SIZE(rxbuf), SS_DEFAULT_CMD_SLEEP_MS);
+
+    if (status == SS_SUCCESS) {
+        snprintf(algo_version, sizeof(algo_version),
+            "%d.%d.%d", rxbuf[1], rxbuf[2], rxbuf[3]);
+		printLog("algo_version:%s\r\n", fw_version);
+    }
+
+    return &algo_version[0];
+}
+
+int bio_mode = -1;
 void bpt_init(void)
 {
 	wait_ms(WAIT_SENSORHUB_STABLE_BOOTUP_MS);
 	sh_init_hwcomm_interface();
-	sh_disable_irq_mfioevent();
-	sh_clear_mfio_event_flag();
-	sh_enable_irq_mfioevent();
+	//sh_disable_irq_mfioevent();
+	ss_disable_irq();
+	ss_clear_mfio_event_flag();
+	//sh_enable_irq_mfioevent();
+	ss_enable_irq();
 
-	fw_version = sh_get_hub_fw_version();
-	fw_version = sh_get_hub_algo_version();
+	bio_mode = ss_in_bootldr_mode();//sh_checkif_bootldr_mode();
+
+	//wait_ms(500);
+	fw_version = myget_ss_fw_version(bio_mode);
+	printLog("Hub FW Version:%s, Line=%d\r\n",fw_version, __LINE__);
+	//wait_ms(500);
+	fw_version = myget_ss_algo_version(bio_mode);
+	printLog("Hub algo Version:%s, Line=%d\r\n",fw_version, __LINE__);
+
+	//fw_version = sh_get_hub_fw_version();
+	//printLog("Hub FW Version:%s, Line=%d\r\n",fw_version, __LINE__);
+	//fw_version = sh_get_hub_algo_version();
+	//printLog("Hub algo Version:%s, Line=%d\r\n\r\n",fw_version, __LINE__);
 }
+
 
 int delay_ms_count = 0;
 uint8_t state_flag = 0;
@@ -196,21 +283,64 @@ uint8_t state_flag = 0;
 //extern struct v3_status v3status;
 void bpt_main(void)
 {
-	static int measurement_count = 0;
+	//static int measurement_count = 0;
     //while(1)
     {
 		switch(appState)
 		{
 			case ST_COMMAND_MODE:
 			{
-				appState = ST_EXAMPLEUSER_CALIBRATION_SETTINGS;
-				printLog("\r\nStarting Calibrating...............\r\n\r\n");
+				//appState = ST_EXAMPLEUSER_CALIBRATION_SETTINGS;
+
+				bio_mode = ss_in_bootldr_mode();//sh_checkif_bootldr_mode();
+
+				//wait_ms(500);
+				fw_version = myget_ss_fw_version(bio_mode);
+				printLog("Hub FW Version:%s, Line=%d\r\n",fw_version, __LINE__);
+				//wait_ms(500);
+				fw_version = myget_ss_algo_version(bio_mode);
+				printLog("Hub algo Version:%s, Line=%d\r\n",fw_version, __LINE__);
+				if(bio_mode == 0)
+				{
+					//appState = ST_EXAMPLEUSER_CALIBRATION_SETTINGS;
+					appState = ST_EXAMPLEUSER_IDLE;
+					printDebug("\r\nStarting Calibrating...............\r\n\r\n");
+				}
+				else if(bio_mode > 0)
+				{
+					printLog("Hub bootloader........., Line = %d\r\n", __LINE__);
+				}
+				else
+					printLog("Unknown Mode........., Line = %d\r\n", __LINE__);
 			}
 			break;
 
+			case ST_EXAMPLEUSER_IDLE:
+			{
+				  set_fw_platform(get_ss_platform_name());
+				  set_fw_version(get_ss_fw_version());
+#if 1
+				  printLog("Sensor FW   Version:%s\r\n",     get_ss_fw_version());
+				  printLog("Platform Name:      %s\r\n",     get_ss_platform_name());
+				  printLog("Part Name:          %s\r\n",     ssMAX30101.get_part_name());
+				  printLog("Sensor Algo Version:%s\r\n",     ssMAX30101.get_algo_ver());
+#endif
+
+				  //add_sensor_comm((SensorComm *)&ssMAX30101);
+				  //add_sensor_comm((SensorComm *)&ssBoot);
+				  //add_sensor_comm((SensorComm *)&ssGenericCmd);
+				  appState = ST_EXAMPLEUSER_IDLE01;
+			}
+			break;
+
+			case ST_EXAMPLEUSER_IDLE01:
+			{
+			}
+			break;
+#if 0
 			case ST_EXAMPLEUSER_CALIBRATION_SETTINGS:
 			{
-				printLog("EXAMPLE USER MEASUREMENT IS STARTED , SETTING UP FOR CALIBRATION ...\r\n");
+				printDebug("EXAMPLE USER MEASUREMENT IS STARTED , SETTING UP FOR CALIBRATION ...\r\n");
 
 				int status = 0;
 
@@ -223,7 +353,7 @@ void bpt_main(void)
 
 			  //set SPo2 coeffcients based on final form factor and hypoxia lab data.
 				status = sh_set_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, (uint8_t*) &example_user.general_const_spo2_coeffients[0], sizeof(example_user.general_const_spo2_coeffients), 5);
-			  //printLog(" \r\n Set algo SPO2 cfg: %d \r\n" , status)5			 	    	//set calibration date and time. Alias of action taken by Command "set_cfg bpt date_time 190308 095829"
+			  //printDebug(" \r\n Set algo SPO2 cfg: %d \r\n" , status)5			 	    	//set calibration date and time. Alias of action taken by Command "set_cfg bpt date_time 190308 095829"
 				status += sh_set_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_EST_DATE, (uint8_t*) &example_user.date_time_calib_instant[0], sizeof(example_user.date_time_calib_instant), 5);
 			  //set example cal_index, systolic, diastolic values. Alias of action taken by Command "set_cfg bpt sys_dia 0 120 80"
 				status  += sh_set_algo_cfg_extendedwait(SH_ALGOIDX_BPT, SS_CFGIDX_BP_SYS_DIA, &example_user.user_sys_dia_0_initials[0], 3 , 5 );
@@ -241,7 +371,7 @@ void bpt_main(void)
 					appState = ST_EXAMPLEUSER_CALIBRATION_STARTING;//ST_EXAMPLEUSER_CALIBRATION_WAIT_COMPLETE;
 					//calibrationTimer_reset();
 					//calibrationTimer_start();
-					printLog("EXAMPLE CALIBRATION MEASUREMENT STARTED... \r\n");
+					printDebug("EXAMPLE CALIBRATION MEASUREMENT STARTED... \r\n");
 				}else
 					appState = ST_EXAMPLEUSER_FAILURE;
 			}
@@ -279,7 +409,7 @@ void bpt_main(void)
 						state_flag = 2;
 						delay_ms_count = 0;
 						//curren_tick1 = sl_sleeptimer_get_tick_count();
-						printLog("EXAMPLE CALIBRATION MEASUREMENT DONE. SETTING UP FOR ESTIMATION ... \r\n");
+						printDebug("EXAMPLE CALIBRATION MEASUREMENT DONE. SETTING UP FOR ESTIMATION ... \r\n");
 					}
 					else
 					{
@@ -290,7 +420,7 @@ void bpt_main(void)
 				{
 					appState =  ST_EXAMPLEUSER_TIMEOUT;
 					measurement_count++;
-					printLog("TIMEOUT CONDITION OCCURED FOR EXAMPLE MEASUREMENT = %d. \r\n", measurement_count);
+					printDebug("TIMEOUT CONDITION OCCURED FOR EXAMPLE MEASUREMENT = %d. \r\n", measurement_count);
 				}
 			}
 			break;
@@ -307,13 +437,13 @@ void bpt_main(void)
                 #if 0
 				int idx = 1; /*skip status byte*/
 				while( idx < sizeof(cal_result) ){
-						printLog("%02X", cal_result[idx]);
+						printDebug("%02X", cal_result[idx]);
 						idx++;
 						if(idx%40 == 0)
-							printLog("\r\n");
+							printDebug("\r\n");
 				}
                 #else
-					printLog("get calibration results.\r\n");
+					printDebug("get calibration results.\r\n");
                 #endif
 			  //Copy as user calibration data
 				memcpy( &example_user.cal_data[0] , &cal_result[STATUS_OFFSET_BYTE] , CAL_DATA_SIZE_BYTES );
@@ -347,7 +477,7 @@ void bpt_main(void)
 						calibrationTimer_reset();
 						calibrationTimer_start();
 						appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
-						printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED \r\n");
+						printDebug("EXAMPLE ESTIMATION MEASUREMENT STARTED \r\n");
 					}
 					else
 					{
@@ -380,11 +510,11 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
 #else
 			        //appState = ST_EXAMPLEUSER_ESTIMATION_RE_STARTING;
 			        appState = ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE;
-					printLog("EXAMPLEUSER_ESTIMATION_RE_STARTING02 Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLEUSER_ESTIMATION_RE_STARTING02 Line:%d\r\n", __LINE__);
 #endif
 				}
 				else
@@ -403,7 +533,7 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -421,7 +551,7 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE_STATUS;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -439,7 +569,7 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_RE_STARTING02;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLE ESTIMATION MEASUREMENT STARTED Line:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -464,7 +594,7 @@ void bpt_main(void)
 					state_flag = 6;
 					appState = ST_EXAMPLEUSER_DELAY_COUNT;
 #endif
-					printLog("ST_EXAMPLEUSER_ESTIMATION_RE_STARTING02:%d\r\n", __LINE__);
+					printDebug("ST_EXAMPLEUSER_ESTIMATION_RE_STARTING02:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -482,7 +612,7 @@ void bpt_main(void)
 					calibrationTimer_reset();
 					calibrationTimer_start();
 					appState = ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT;
-					printLog("EXAMPLE ESTIMATION MEASUREMENT RE_STARTED Line:%d\r\n", __LINE__);
+					printDebug("EXAMPLE ESTIMATION MEASUREMENT RE_STARTED Line:%d\r\n", __LINE__);
 				}
 				else
 				{
@@ -536,7 +666,7 @@ void bpt_main(void)
 				if(measurement_count > 2)
 				{
 					measurement_count = 0;
-					printLog("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Calibration. \r\n");
+					printDebug("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Calibration. \r\n");
 					appState = ST_EXAMPLEUSER_DELAY_COUNT;                     //Jason //ST_COMMAND_MODE;
 					delay_ms_count = 0;
 					state_flag = 1;
@@ -544,7 +674,7 @@ void bpt_main(void)
 				}
 				else
 				{
-					printLog("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Measurement = %d. \r\n", measurement_count);
+					printDebug("Finger take off ONDITION OCCURED FOR EXAMPLE MEASUREMENT, Re-Measurement = %d. \r\n", measurement_count);
 					appState = ST_EXAMPLEUSER_DELAY_COUNT;     //ST_EXAMPLEUSER_ESTIMATION_STARTING;//ST_EXAMPLEUSER_ESTIMATION_SETTINGS;
 					delay_ms_count = 0;
 					state_flag = 0;
@@ -557,7 +687,7 @@ void bpt_main(void)
 			case ST_EXAMPLEUSER_FAILURE:
 			{
 				//curren_tick1 = sl_sleeptimer_get_tick_count();
-				printLog("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
+				printDebug("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
 			  //is_example_measurement_active =  false;
 				calibrationTimer_stop();
 				SH_Max3010x_stop(0);
@@ -571,7 +701,7 @@ void bpt_main(void)
 			{
 				uint16_t DELAY_COUNT = 20;
 				//uint32_t diff = sl_sleeptimer_get_tick_count() - curren_tick1;
-				//printLog("DELAY %d ms.......... \r\n", (int)sl_sleeptimer_tick_to_ms(diff));
+				//printDebug("DELAY %d ms.......... \r\n", (int)sl_sleeptimer_tick_to_ms(diff));
 				delay_ms_count++;
 				if(state_flag == 4)
 					DELAY_COUNT = 8;
@@ -599,23 +729,26 @@ void bpt_main(void)
 				}
 			}
 		    break;
+#endif
 		}
 
 		//wait_ms(2);
-		SH_Max3010x_data_report_execute02();
+		//SH_Max3010x_data_report_execute02();
 	}
 }
 
 void bpt_main_reset(void)
 {
+#if 0
 	//curren_tick1 = sl_sleeptimer_get_tick_count();
-	printLog("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
+	printDebug("TIMEOUT/FAULT CONDITION OCCURED FOR EXAMPLE MEASUREMENT. \r\n");
   //is_example_measurement_active =  false;
 	calibrationTimer_stop();
 	SH_Max3010x_stop(0);
 	appState = ST_EXAMPLEUSER_DELAY_COUNT;                     //Jason //ST_COMMAND_MODE;
 	delay_ms_count = 0;
 	state_flag = 1;
+#endif
 }
 
 

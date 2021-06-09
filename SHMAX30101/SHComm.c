@@ -42,6 +42,72 @@
 #include <string.h>
 #include "sl_sleeptimer.h"
 
+#if 0
+/*static*/ volatile bool m_irq_received    = false;
+
+/*  desc:
+ *       func to enable event reporting from sensor hub
+ *
+ *  params:
+ *       N/A
+ * */
+void sh_enable_irq_mfioevent(void)
+{
+#if 0
+	irq_pin_enable_irq();
+#else
+  #ifdef USING_INT_PC4
+	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+  #else
+	NVIC_EnableIRQ(GPIO_ODD_IRQn);
+  #endif
+#endif
+}
+
+/*  desc:
+ *       func to disable event reporting from sensor hub
+ *
+ *  params:
+ *       N/A
+ * */
+void sh_disable_irq_mfioevent(void)
+{
+#if 0
+	irq_pin_disable_irq();
+#else
+  #ifdef USING_INT_PC4
+	NVIC_DisableIRQ(GPIO_EVEN_IRQn);
+  #else
+	NVIC_DisableIRQ(GPIO_ODD_IRQn);
+  #endif
+#endif
+}
+
+
+#define SH_GET_OPERATING_MODE_CMDSEQ                {0x02,0x00}
+#define SS_DEFAULT_CMD_SLEEP_MS                     (2)
+
+int sh_get_sensorhub_operating_mode(uint8_t *hubMode){
+
+	uint8_t ByteSeq[] = SH_GET_OPERATING_MODE_CMDSEQ;
+	uint8_t rxbuf[2] = { 0 };
+
+	int status = sh_read_cmd(&ByteSeq[0], sizeof(ByteSeq),
+			                    0, 0,
+			                    &rxbuf[0], sizeof(rxbuf),
+								SS_DEFAULT_CMD_SLEEP_MS);
+
+	*hubMode = rxbuf[1];
+	return status;
+}
+
+int sh_checkif_bootldr_mode(void)
+{
+	uint8_t hubMode;
+	int status = sh_get_sensorhub_operating_mode(&hubMode);
+	return (status != SS_SUCCESS1)? -1:(hubMode & SS_MASK_MODE_BOOTLDR);
+}
+
 #define SS_I2C_8BIT_SLAVE_ADDR      0xAA
 #define SENSORHUB_I2C_ADRESS        SS_I2C_8BIT_SLAVE_ADDR
 
@@ -51,7 +117,7 @@
 #define SS_DUMP_REG_SLEEP_MS        (100)
 #define SS_ENABLE_SENSOR_SLEEP_MS   (40)
 #define SS_ENABLE_ALGO_SLEEP_MS     (100)                                    // 500 ---> 50, 2021.03.02
-#define SS_DEFAULT_CMD_SLEEP_MS     (2)
+
 #define SS_WAIT_BETWEEN_TRIES_MS    (2)
 #define SS_CMD_WAIT_PULLTRANS_MS    (5)
 #define SS_FEEDFIFO_CMD_SLEEP_MS	(30)
@@ -73,7 +139,7 @@
 #define SH_SET_OPERATING_MODE_BOOTLOADER_CMDSEQ             {0x02,0x00,0x08}
 #define SH_SET_OPERATING_MODE_APPLICATION_CMDSEQ            {0x02,0x00,0x00}
 #define SH_SET_OPERATING_MODE_RESET_CMDSEQ                  {0x02,0x00,0x02}
-#define SH_GET_OPERATING_MODE_CMDSEQ                        {0x02,0x00}
+
 
 #define SH_SET_OUTPUT_MODE_CMDSEQ( outMode)                 {0x10,0x00, outMode}
 #define SH_SET_OUTMODE_NODATA_CMDSEQ                        {0x10,0x00,0x00}
@@ -157,11 +223,11 @@ static volatile bool mfio_int_happened1 = false;
 /* sensor hub states */
 static bool sc_en     = false;
 /*static*/ int data_type  = 0;
-static int is_sensor_enabled[SS_MAX_SUPPORTED_SENSOR_NUM] = {0};
-static int is_algo_enabled[SS_MAX_SUPPORTED_ALGO_NUM]     = {0};
-static int enabled_algo_mode[SS_MAX_SUPPORTED_ALGO_NUM]   = {0};
-static int sensor_sample_sz[SS_MAX_SUPPORTED_SENSOR_NUM]  = {0};
-static int algo_sample_sz[SS_MAX_SUPPORTED_ALGO_NUM]      = {0};
+static int is_sensor_enabled[SS_MAX_SUPPORTED_SENSOR_NUM1] = {0};
+static int is_algo_enabled[SS_MAX_SUPPORTED_ALGO_NUM1]     = {0};
+static int enabled_algo_mode[SS_MAX_SUPPORTED_ALGO_NUM1]   = {0};
+static int sensor_sample_sz[SS_MAX_SUPPORTED_SENSOR_NUM1]  = {0};
+static int algo_sample_sz[SS_MAX_SUPPORTED_ALGO_NUM1]      = {0};
 
 /* Mode to control sesnor hub resets. ie via GPIO based hard reset or Command based soft reset*/
 static uint8_t ebl_mode = EBL_GPIO_TRIGGER_MODE;
@@ -253,151 +319,11 @@ static void delay_1ms(void)
 }
 #endif
 
-void wait_ms(uint16_t wait_ms)
-{
-	//if(v3status.spp == 2)
-	//{
-	//  sl_sleeptimer_delay_millisecond(wait_ms);
-	//}
-	//else
-#if 0
-	{
-	  uint16_t ms_count = 0;
-	  if(wait_ms == 0) return;
-	  while(ms_count < wait_ms)
-	  {
-		delay_1ms();
-		ms_count++;
-	  }
-	}
-#else
-	uint32_t delay = sl_sleeptimer_ms_to_tick(wait_ms);
-	uint32_t curren_tick1 = sl_sleeptimer_get_tick_count();
-	uint32_t diff = 0;
-	while(1)
-	{
-		diff = sl_sleeptimer_get_tick_count() - curren_tick1;
-	    if(diff > delay)
-	    	return;
-	}
-#endif
-}
-
 void sh_irq_handler(void)
 {
   m_irq_received = true;
 }
 
-#define BSP_GPIO_PC4_PORT       gpioPortC
-#define BSP_GPIO_PC4_PIN        4
-#define BSP_GPIO_PC5_PORT       gpioPortC
-#define BSP_GPIO_PC5_PIN        5
-
-/**************************************************************************//**
- * @brief Setup GPIO interrupt for pushbuttons.
- *****************************************************************************/
-#define USING_INT_PC5
-static void mfioGPIOSetup(void)
-{
-  /* Configure GPIO Clock */
-//CMU_ClockEnable(cmuClock_GPIO, true);
-#ifdef USING_INT_PC4
-  /* Configure Button PC4 as input and enable interrupt */
-  GPIO_PinModeSet(BSP_GPIO_PC4_PORT, BSP_GPIO_PC4_PIN, gpioModeInputPull, 1);
-  GPIO_ExtIntConfig(BSP_GPIO_PC4_PORT,
-                    BSP_GPIO_PC4_PIN,
-                    BSP_GPIO_PC4_PIN,          // Interrupt Number
-                    false,                     // RisingEdge  Disable
-                    true,                      // FallingEdge Enable
-                    true                       // interrupt   Enable
-					);
-
-  /* Enable EVEN interrupt to catch button press that changes slew rate */
-  NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
-  NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-  NVIC_DisableIRQ(GPIO_EVEN_IRQn);
-#else
-  /* Configure Button PB1 as input and enable interrupt */
-  GPIO_PinModeSet(BSP_GPIO_PC5_PORT, BSP_GPIO_PC5_PIN, gpioModeInputPull, 1);
-  GPIO_ExtIntConfig(BSP_GPIO_PC5_PORT,
-                    BSP_GPIO_PC5_PIN,
-                    BSP_GPIO_PC5_PIN,
-                    false,
-                    true,
-                    true);
-
-  /* Enable ODD interrupt to catch button press that changes slew rate */
-  NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
-  NVIC_EnableIRQ(GPIO_ODD_IRQn);
-  NVIC_DisableIRQ(GPIO_ODD_IRQn);
-#endif
-}
-
-#ifdef USING_INT_PC4
-/**************************************************************************//**
- * @brief GPIO Interrupt handler for even pins.
- *****************************************************************************/
-void GPIO_EVEN_IRQHandler(void)
-{
-  /* Get and clear all pending GPIO interrupts */
-  uint32_t interruptMask = GPIO_IntGet();
-  GPIO_IntClear(interruptMask);
-
-  /* Check if button 0 was pressed */
-  if (interruptMask & (1 << BSP_GPIO_PC4_PIN))
-  {
-	  sh_irq_handler();
-  }
-}
-#else
-/**************************************************************************//**
- * @brief GPIO Interrupt handler for even pins.
- *****************************************************************************/
-void GPIO_ODD_IRQHandler(void)
-{
-  /* Get and clear all pending GPIO interrupts */
-  uint32_t interruptMask = GPIO_IntGet();
-  GPIO_IntClear(interruptMask);
-
-  /* Check if button 1 was pressed */
-  if (interruptMask & (1 << BSP_GPIO_PC5_PIN))
-  {
-	  sh_irq_handler();
-  }
-}
-#endif
-
-void sh_init_hwcomm_interface(){
-#if 1
-	mfioGPIOSetup();
-  //irq_pin_fall();
-#elif 0
-	reset_pin_input();
-	reset_pin_mode_PullUp();
-	mfio_pin_input();                   /*set mfio as input for getting mfio event reporting when sesnor hub is on  application mode */
-	mfio_pin_mode_PullUp();
-	irq_pin_fall();                     /*attach falling edge interrupt to mfio pin for mfio event reporting */
-#else
-	reset_pin_output();
-	mfio_pin_output();
-
-	reset_pin_write(0);
-	mfio_pin_write(1);
-	wait_ms(10);
-	reset_pin_write(1);
-
-	wait_ms(2000);
-
-	reset_pin_input();
-	reset_pin_mode_PullUp();
-	mfio_pin_input();                   /*set mfio as input for getting mfio event reporting when sesnor hub is on  application mode */
-	mfio_pin_mode_PullUp();
-
-	irq_pin_fall();                    //sh_irq_handler);    /*attach falling edge interrupt to mfio pin for mfio event reporting */
-#endif
-  //isHubCommInited = 1;
-    return;
-}
 
 /* mfio pin event reporting related interrupt functions*/
 /*
@@ -407,50 +333,8 @@ void sh_init_hwcomm_interface(){
  *         N/A
  * */
 
-void sh_clear_mfio_event_flag(void){
-	m_irq_received = false;
-}
-
 bool sh_has_mfio_event(void){
 	return m_irq_received;
-}
-
-/*  desc:
- *       func to enable event reporting from sensor hub
- *
- *  params:
- *       N/A
- * */
-void sh_enable_irq_mfioevent(void)
-{
-#if 0
-	irq_pin_enable_irq();
-#else
-  #ifdef USING_INT_PC4
-	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
-  #else
-	NVIC_EnableIRQ(GPIO_ODD_IRQn);
-  #endif
-#endif
-}
-
-/*  desc:
- *       func to disable event reporting from sensor hub
- *
- *  params:
- *       N/A
- * */
-void sh_disable_irq_mfioevent(void)
-{
-#if 0
-	irq_pin_disable_irq();
-#else
-  #ifdef USING_INT_PC4
-	NVIC_DisableIRQ(GPIO_EVEN_IRQn);
-  #else
-	NVIC_DisableIRQ(GPIO_ODD_IRQn);
-  #endif
-#endif
 }
 
 /* desc:
@@ -572,19 +456,6 @@ int sh_reset_to_main_app(void)
 	return status;
 
 }
-
-/*
- * desc:
- *    function to init sensor comm interface and get data format.
- *
- * */
-void sh_init_hubinterface(void){
-
-	sh_init_hwcomm_interface();
-	//sh_get_data_type(&data_type, &sc_en);
-    return;
-}
-
 
 /*
  *
@@ -767,7 +638,7 @@ int sh_write_cmd( uint8_t *tx_buf,
         return SS_ERR_UNAVAILABLE1;
     }
 
-	return (int) (SS_STATUS)status_byte;
+	return (int) (SS_STATUS1)status_byte;
 }
 
 
@@ -826,7 +697,7 @@ int sh_read_cmd( uint8_t *cmd_bytes,
     if (ret != 0 || try_again)
         return SS_ERR_UNAVAILABLE1;
 
-    return (int) ((SS_STATUS)rxbuf[0]);
+    return (int) ((SS_STATUS1)rxbuf[0]);
 }
 
 
@@ -846,19 +717,6 @@ int sh_get_sensorhub_status(uint8_t *hubStatus){
 }
 
 
-int sh_get_sensorhub_operating_mode(uint8_t *hubMode){
-
-	uint8_t ByteSeq[] = SH_GET_OPERATING_MODE_CMDSEQ;
-	uint8_t rxbuf[2] = { 0 };
-
-	int status = sh_read_cmd(&ByteSeq[0], sizeof(ByteSeq),
-			                    0, 0,
-			                    &rxbuf[0], sizeof(rxbuf),
-								SS_DEFAULT_CMD_SLEEP_MS);
-
-	*hubMode = rxbuf[1];
-	return status;
-}
 
 
 int sh_set_sensorhub_operating_mode(uint8_t hubMode){
@@ -1324,7 +1182,7 @@ int sh_write_cmd_with_data02(uint8_t *cmd_bytes,
         return SS_ERR_UNAVAILABLE1;
     }
 
-	return (int) (SS_STATUS)status_byte;
+	return (int) (SS_STATUS1)status_byte;
 }
 
 
@@ -1347,7 +1205,7 @@ int sh_enable_algo_withmode02(int idx, int mode, int algoSampleSz)
     if(ret != 0)
        return SS_ERR_UNAVAILABLE1;
 
-    return (int) (SS_STATUS)ret;
+    return (int) (SS_STATUS1)ret;
 }
 
 int sh_enable_algo_withmode_status02(int idx, int mode, int algoSampleSz)
@@ -1372,7 +1230,7 @@ int sh_enable_algo_withmode_status02(int idx, int mode, int algoSampleSz)
 		algo_sample_sz[idx]    = algoSampleSz;
 		enabled_algo_mode[idx] = mode;
 	}
-	return (int) (SS_STATUS)status_byte;
+	return (int) (SS_STATUS1)status_byte;
 }
 
 int sh_disable_algo(int idx){
@@ -1463,7 +1321,7 @@ int sh_get_algo_cfg_extendedwait(int algo_idx, int cfg_idx, uint8_t *cfg, int cf
 	//*sample_size = 0;
 
 	if (data_type_ == SS_DATATYPE_RAW || data_type_ == SS_DATATYPE_BOTH) {
-		for (int i = 0; i < SS_MAX_SUPPORTED_SENSOR_NUM; i++) {
+		for (int i = 0; i < SS_MAX_SUPPORTED_SENSOR_NUM1; i++) {
 			if (is_sensor_enabled[i]) {
 				tmpSz += sensor_sample_sz[i];
 				//*sample_size += sensor_data_reqs[i]->data_size;
@@ -1472,7 +1330,7 @@ int sh_get_algo_cfg_extendedwait(int algo_idx, int cfg_idx, uint8_t *cfg, int cf
 	}
 
 	if (data_type_ == SS_DATATYPE_ALGO || data_type_ == SS_DATATYPE_BOTH) {
-		for (int i = 0; i < SS_MAX_SUPPORTED_ALGO_NUM; i++) {
+		for (int i = 0; i < SS_MAX_SUPPORTED_ALGO_NUM1; i++) {
 			if (is_algo_enabled[i]) {
 				tmpSz += algo_sample_sz[i];
 				//*sample_size += algo_data_reqs[i]->data_size;
@@ -1721,7 +1579,7 @@ int sh_get_ss_fw_version(uint8_t *fwDesciptor  , uint8_t *descSize)
     return status;
 
 }
-
+#endif
 
 /*
 #ifdef __cplusplus

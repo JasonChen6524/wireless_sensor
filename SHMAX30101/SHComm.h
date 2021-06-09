@@ -42,6 +42,35 @@ extern "C" {
 #endif
 */
 
+typedef enum {
+	ST_COMMAND_MODE,
+#if 0
+	ST_EXAMPLEUSER_CALIBRATION_SETTINGS,
+  //ST_EXAMPLEUSER_CALIBRATION_MEASUREMENT,
+	ST_EXAMPLEUSER_CALIBRATION_WAIT_COMPLETE,
+	ST_EXAMPLEUSER_ESTIMATION_SETTINGS,
+	ST_EXAMPLEUSER_ESTIMATION_SETTINGS2,
+	ST_EXAMPLEUSER_ESTIMATION_STARTING,
+	ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT,
+	ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT,
+	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING,                        // Added by Jason, 2021.03.02
+	ST_EXAMPLEUSER_CALIBRATION_STARTING,                          // Added by Jason, 2021.03.02
+	ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE,                      // Added by Jason, 2021.03.04
+	ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE_STATUS,               // Added by Jason, 2021.03.04
+	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING02,                      // Added by Jason, 2021.03.04
+	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING03,                      // Added by Jason, 2021.03.04
+	ST_EXAMPLEUSER_TIMEOUT,
+	ST_EXAMPLEUSER_FAILURE,
+	ST_EXAMPLEUSER_DELAY_COUNT,                                    // Jason
+#endif
+	ST_EXAMPLEUSER_IDLE,                                            // Jason                 2021.0601
+	ST_EXAMPLEUSER_IDLE01                                            // Jason                 2021.0601
+}demo_appstate_t;
+
+extern demo_appstate_t appState;
+extern uint16_t calibrationTimer_read(void);
+#if 0
+
 // Sensor/Algo indicies
 #define SH_SENSORIDX_MAX8614X	0x00
 #define SH_SENSORIDX_MAX30205	0x01
@@ -257,11 +286,11 @@ extern "C" {
 
 /* Newly added ones; checko for collosion or repeats with the ones above */
 #define SS_RESET_TIME	10
-#define SS_STARTUP_TO_BTLDR_TIME	20
+#define SS_STARTUP_TO_BTLDR_TIME1	20
 #define SS_STARTUP_TO_MAIN_APP_TIME	1000
 
-#define SS_MAX_SUPPORTED_SENSOR_NUM	0xFE
-#define SS_MAX_SUPPORTED_ALGO_NUM	0xFE
+#define SS_MAX_SUPPORTED_SENSOR_NUM1	0xFE
+#define SS_MAX_SUPPORTED_ALGO_NUM1	0xFE
 
 #define SS_APPPLICATION_MODE   0x00
 #define SS_BOOTLOADER_MODE     0x08
@@ -277,31 +306,10 @@ typedef enum {
 	SS_ERR_TRY_AGAIN1       =0xFE,
 	SS_ERR_UNKNOWN1         =0xFF,
 
-} SS_STATUS;
+} SS_STATUS1;
 
-typedef enum {
-	ST_COMMAND_MODE,
-	ST_EXAMPLEUSER_CALIBRATION_SETTINGS,
-  //ST_EXAMPLEUSER_CALIBRATION_MEASUREMENT,
-	ST_EXAMPLEUSER_CALIBRATION_WAIT_COMPLETE,
-	ST_EXAMPLEUSER_ESTIMATION_SETTINGS,
-	ST_EXAMPLEUSER_ESTIMATION_SETTINGS2,
-	ST_EXAMPLEUSER_ESTIMATION_STARTING,
-	ST_EXAMPLEUSER_ESTIMATION_MEASUREMENT,
-	ST_EXAMPLEUSER_ESTIMATION_RE_MEASUREMENT,
-	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING,                        // Added by Jason, 2021.03.02
-	ST_EXAMPLEUSER_CALIBRATION_STARTING,                          // Added by Jason, 2021.03.02
-	ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE,                      // Added by Jason, 2021.03.04
-	ST_EXAMPLEUSER_ESTIMATION_SENSOR_ENABLE_STATUS,               // Added by Jason, 2021.03.04
-	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING02,                      // Added by Jason, 2021.03.04
-	ST_EXAMPLEUSER_ESTIMATION_RE_STARTING03,                      // Added by Jason, 2021.03.04
-	ST_EXAMPLEUSER_TIMEOUT,
-	ST_EXAMPLEUSER_FAILURE,
-	ST_EXAMPLEUSER_DELAY_COUNT                                    // Jason
 
-}demo_appstate_t;
 
-extern demo_appstate_t appState;
 extern uint16_t re_trigger;
 
 /* ***************************************************************************************** *
@@ -681,7 +689,7 @@ int sh_ss_execute_once( uint8_t *databuf , int databufLen , int *nSamplesRead);
  * @return		1 byte status (SS_STATUS) : 0x00 (SS_SUCCESS) on success
  */
 //SS_STATUS self_test(int idx, uint8_t *result, int sleep_ms = SS_DEFAULT_CMD_SLEEP_MS);
-SS_STATUS self_test(int idx, uint8_t *result, int sleep_ms);
+SS_STATUS1 self_test1(int idx, uint8_t *result, int sleep_ms);
 int sh_self_test(int idx, uint8_t *result, int sleep_ms);
 
 
@@ -870,7 +878,6 @@ int exit_from_bootloader(void);
  *                                                                                         *                                                                                         *
  * *****************************************************************************************/
 
-void sh_init_hwcomm_interface();
 bool sh_has_mfio_event(void);
 void sh_enable_irq_mfioevent(void);
 void sh_disable_irq_mfioevent(void);
@@ -895,7 +902,7 @@ void fifo_sample_size(int data_type_, int *sample_size);         //Added by Jaso
 }
 #endif
 */
-
+#endif
 
 
 #endif /* _SENSOR_HUB_H */

@@ -43,7 +43,7 @@
 #include "native_gecko.h"
 #include "queue.h"
 //#include "mbed.h"
-//#include "Peripherals.h"
+#include "Peripherals.h"
 
 int queue_reset(struct queue_t *q)
 {
@@ -140,7 +140,7 @@ int dequeue(struct queue_t *q, void *data)
 		q->ovf_item = q->num_item - fifo_size;
 		q->rd = (void *)((uint32_t)q->base + (curr_rd_off % q->buffer_size));
 		q->num_item = fifo_size; // OVF number samples are already gone.
-		printLog("%s:%d - %d samples lost, avail:%d \n",
+		pr_info("%s:%d - %d samples lost, avail:%d \n",
 				__func__, __LINE__, q->ovf_item, q->num_item);
 	} else
 		q->ovf_item = 0;

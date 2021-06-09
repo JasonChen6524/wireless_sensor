@@ -23,6 +23,7 @@
 
 #include "app.h"
 #include "spp_utils.h"
+#include "SensorComm.h"
 
 /* Main application */
 void appMain(gecko_configuration_t *pconfig)
@@ -32,13 +33,15 @@ void appMain(gecko_configuration_t *pconfig)
 #endif
 
   /* Initialize debug prints. Note: debug prints are off by default. See DEBUG_LEVEL in app.h */
-  initLog();
+  //initLog();
 
   /* Initialize stack */
   gecko_init(pconfig);
 
+  SensorComm_create();
   /*  jump to SPP program main loop */
   //spp_main();
   printLog("* SPP server mode *\r\n");
+
   spp_server_main();
 }

@@ -34,12 +34,13 @@
 #define __ASSERT_H__
 
 #include "Peripherals.h"
+#include "app.h"
 
 #define assert(test)	\
 {	\
 	if (!(test)) {	\
 		pr_err("Assertion (%s:%d)\r\n", __FILE__, __LINE__);	\
-		printf("Assertion (%s:%d)\r\n", __FILE__, __LINE__);	\
+		printLog("Assertion (%s:%d)\r\n", __FILE__, __LINE__);	\
 		while (true) {};	\
 	}	\
 }
@@ -48,7 +49,7 @@
 {	\
 	if (!(test)) {	\
 		pr_err("Assertion (%s:%d): %s\r\n", __FILE__, __LINE__, #msg);	\
-		printf("Assertion (%s:%d): %s\r\n", __FILE__, __LINE__, #msg);	\
+		printLog("Assertion (%s:%d): %s\r\n", __FILE__, __LINE__, #msg);	\
 		while (true) {};	\
 	}	\
 }

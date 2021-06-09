@@ -45,6 +45,16 @@ extern void bpt_main_reset(void); //
 Call to determine if sensor cable is attached.
 function will populate v3status.conn v3PINSBIO bitfield
 */
+
+void sensor_reset(void)
+{
+   ExpSetPins(EN5V_HIGH|RESET_LOW|MFIO_HIGH);
+   wait_ms(500);
+   ExpSetPins(EN5V_HIGH|RESET_HIGH|MFIO_HIGH);
+   wait_ms(500);
+}
+
+
 void I2C_Sensors(void)
 {
    static U8 state = S0;

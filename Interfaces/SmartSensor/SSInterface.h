@@ -50,22 +50,22 @@
 #define SS_DUMP_REG_SLEEP_MS      100
 #define SS_ENABLE_SENSOR_SLEEP_MS 20
 
-#define SH_SENSORIDX_MAX8614X	0x00
-#define SH_SENSORIDX_MAX30205	0x01
-#define SH_SENSORIDX_MAX30001	0x02
-#define SH_SENSORIDX_MAX30101	0x03
-#define SH_SENSORIDX_ACCEL	    0x04
-#define SH_NUM_CURRENT_SENSORS	5                                      // Added by Jason
+#define SS_SENSORIDX_MAX8614X	0x00
+#define SS_SENSORIDX_MAX30205	0x01
+#define SS_SENSORIDX_MAX30001	0x02
+#define SS_SENSORIDX_MAX30101	0x03
+#define SS_SENSORIDX_ACCEL	    0x04
+#define SS_NUM_CURRENT_SENSORS	5                                      // Added by Jason
 
 #define SS_ALGOIDX_AGC	            0x00
 #define SS_ALGOIDX_AEC	            0x01
 #define SS_ALGOIDX_WHRM	            0x02
 #define SS_ALGOIDX_ECG	            0x03
 #define SS_ALGOIDX_BPT	            0x04
-#define SH_ALGOIDX_WSPO2            0x05                               // Added by Jason
-#define SH_ALGOIDX_WSPO3            0x06                               // Added by Jason
+#define SS_ALGOIDX_WSPO2            0x05                               // Added by Jason
+#define SS_ALGOIDX_WSPO3            0x06                               // Added by Jason
 #define SS_ALGOIDX_WHRM_WSPO2_SUITE 0x07
-#define SH_NUM_CURRENT_ALGOS	    8
+#define SS_NUM_CURRENT_ALGOS	    8
 
 #define SS_FAM_R_STATUS		                    0x00
 	#define SS_CMDIDX_STATUS	                0x00
@@ -181,6 +181,9 @@
 	#define SS_CFGIDX_BP_EST_DATE		0x04
 	#define SS_CFGIDX_BP_EST_NONREST	0x05
     #define SS_CFGIDX_BP_SPO2_COEFS     0x06
+	#define SS_CFGIDX_BP_SYS_DIA		0x07                                          // Added by Jason
+	#define SS_CFGIDX_BP_CAL_INDEX		0x08                                          // Added by Jason
+    #define SS_NUM_CURRENT_CFGIDX	    9                                             // Added by Jason
 
 	//config for WHRM+WSPO2 ALGO SUITE
     #define SS_CFGIDX_WHRM_WSPO2_SUITE_SPO2_CAL		                0x00
@@ -308,10 +311,10 @@ typedef enum {
 #define SS_STARTUP_TO_BTLDR_TIME	50
 #define SS_STARTUP_TO_MAIN_APP_TIME	1000
 
-#define SS_MAX_SUPPORTED_SENSOR_NUM	    0xFE
-#define SS_MAX_SUPPORTED_ALGO_NUM	    0xFE
-#define SS_MAX_SUPPORTED_ALGO_CFG_NUM	0xFE
-#define SS_MAX_SUPPORTED_MODE_NUM	    0xFF
+#define SS_MAX_SUPPORTED_SENSOR_NUM	    SS_NUM_CURRENT_SENSORS//0xFE                       Modified by Jason
+#define SS_MAX_SUPPORTED_ALGO_NUM	    SS_NUM_CURRENT_ALGOS//0xFE                         Modified by Jason
+#define SS_MAX_SUPPORTED_ALGO_CFG_NUM	SS_NUM_CURRENT_CFGIDX                            //SS_NUM_CURRENT_ALGOS//0xFE,    Modified by Jason
+#define SS_MAX_SUPPORTED_MODE_NUM	    10//0xFF                                           Modified by Jason
 
 extern void wait_ms(uint16_t wait_ms);
 #if 0
@@ -344,6 +347,10 @@ typedef union {
 } status_algo_sensors_st;
 
 #define BPT_POLL_MODE
+
+void sh_init_hwcomm_interface(void);
+
+void ss_clear_mfio_event_flag(void);
 
 
 /**
@@ -574,7 +581,7 @@ typedef union {
 	 *
 	 * @return 	SS_SUCCESS on success
 	 */
-	SS_STATUS set_data_type(int data_type, bool sc_en);
+	SS_STATUS set_data_type(int data_type1, bool sc_en1);
 
 	/**
 	 * @brief	Get the CommChannel Output Mode options
@@ -627,13 +634,15 @@ typedef union {
 	void ss_clear_interrupt_flag(void);
 
 
-	void start_emul_mfio_event(float fPeriodinSecs){
+	void start_emul_mfio_event(float fPeriodinSecs);
+	//{
 		//??MfioEventEmulator.attach(this, &SSInterface::MfioEventEmulator_callBack, fPeriodinSecs);
-	}
+	//}
 
-	void stop_emul_mfio_event(void){
+	void stop_emul_mfio_event(void);
+	//{
 		//??MfioEventEmulator.detach();
-	}
+	//}
 
 	SS_STATUS set_shut_down_enter(void);
 	SS_STATUS set_shut_down_exit(void);
@@ -642,6 +651,9 @@ typedef union {
 	SS_STATUS set_dhlocalpublic(  uint8_t *publicKey , int public_sz );
 	SS_STATUS get_dhremotepublic( uint8_t *response, int response_sz );
 	SS_STATUS get_authentication( uint8_t *response, int response_sz );
+
+	//extern char fw_version[128];
+	//extern char algo_version[128];
 
 //private:
 #if 0

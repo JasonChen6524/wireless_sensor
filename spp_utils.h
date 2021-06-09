@@ -41,7 +41,4 @@ void spp_server_main(void);
 }
 #endif
 
-#define MAX_BLE_QUEUE (128+16)
-#define BLE_NOTIFY_CHAR_ARR_SIZE    ((int)60)  /*JUST FOR MPOC TESTING!!! MAKE IT as 20 bytes*/
-
 #endif // SPP_UTILS_H

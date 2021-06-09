@@ -31,15 +31,24 @@
 ****************************************************************************
 */
 
-#include "string.h"
-#include "stdio.h"
+#include <string.h>
+#include <stdio.h>
+#include "hal-config-board.h"
 #include "SSInterface.h"
 #include "Peripherals.h"
 #include "assert.h"
 #include "utils.h"
 #include "I2C.h"
 #include "app.h"
-//#include "ble/BLE.h"
+#include "sl_sleeptimer.h"
+
+
+//#include "em_device.h"
+//#include "em_gpio.h"
+//#include "global.h"
+//#include "SHComm.h"
+//#include "sl_sleeptimer.h"
+
 
 //#define DEBUG_TIMING_PROFILE
 
@@ -57,7 +66,7 @@ static volatile bool mfio_int_happened;
 static int sensor_enabled_mode[SS_MAX_SUPPORTED_SENSOR_NUM];
 static ss_data_req* sensor_data_reqs[SS_MAX_SUPPORTED_SENSOR_NUM];
 
-static void fifo_sample_size(int data_type, int* sample_size);
+static void fifo_sample_size(int data_type, int* sample_size1);
 static int algo_enabled_mode[SS_MAX_SUPPORTED_ALGO_NUM];
 static ss_data_req* algo_data_reqs[SS_MAX_SUPPORTED_ALGO_NUM];
 
@@ -65,6 +74,42 @@ static ss_data_req* algo_data_reqs[SS_MAX_SUPPORTED_ALGO_NUM];
 	Timer debugTimer;
 	static int prevTime_ms;
 #endif
+
+
+void wait_ms(uint16_t wait_ms)
+{
+	//if(v3status.spp == 2)
+	//{
+	//  sl_sleeptimer_delay_millisecond(wait_ms);
+	//}
+	//else
+#if 0
+	{
+	  uint16_t ms_count = 0;
+	  if(wait_ms == 0) return;
+	  while(ms_count < wait_ms)
+	  {
+		delay_1ms();
+		ms_count++;
+	  }
+	}
+#else
+	uint32_t delay = sl_sleeptimer_ms_to_tick(wait_ms);
+	uint32_t curren_tick1 = sl_sleeptimer_get_tick_count();
+	uint32_t diff = 0;
+	while(1)
+	{
+		diff = sl_sleeptimer_get_tick_count() - curren_tick1;
+		if(diff > delay)
+			return;
+	}
+#endif
+}
+
+void ss_clear_mfio_event_flag(void){
+	m_irq_received_ = false;
+}
+
 
 #if 0
 SSInterface::SSInterface(I2C &i2cBus, PinName ss_mfio, PinName ss_reset)
@@ -101,6 +146,8 @@ SSInterface::~SSInterface()
 {
 }
 #endif
+
+
 
 SS_STATUS reset_to_main_app(void)
 {
@@ -180,6 +227,19 @@ SS_STATUS ss_stay_in_bootloader(void)
 	in_bootldr = (status == SS_SUCCESS) ? true : false;
 	return status;
 }
+void stop_emul_mfio_event(void)
+{
+#if 0
+	irq_pin_disable_irq();
+	MfioEventEmulator.detach();
+#else
+  #ifdef USING_INT_PC4
+	NVIC_DisableIRQ(GPIO_EVEN_IRQn);
+  #else
+	NVIC_DisableIRQ(GPIO_ODD_IRQn);
+  #endif
+#endif
+}
 
 int ss_in_bootldr_mode(void)
 {
@@ -231,16 +291,150 @@ void cfg_mfio(PinDirection dir)
 	}
 }
 
+static void irq_handler(void)
+{
+	m_irq_received_ = true;
+}
+
+#define BSP_GPIO_PC4_PORT       gpioPortC
+#define BSP_GPIO_PC4_PIN        4
+#define BSP_GPIO_PC5_PORT       gpioPortC
+#define BSP_GPIO_PC5_PIN        5
+
+/**************************************************************************//**
+ * @brief Setup GPIO interrupt for pushbuttons.
+ *****************************************************************************/
+#define USING_INT_PC5
+static void mfioGPIOSetup(void)
+{
+  /* Configure GPIO Clock */
+//CMU_ClockEnable(cmuClock_GPIO, true);
+#ifdef USING_INT_PC4
+  /* Configure Button PC4 as input and enable interrupt */
+  GPIO_PinModeSet(BSP_GPIO_PC4_PORT, BSP_GPIO_PC4_PIN, gpioModeInputPull, 1);
+  GPIO_ExtIntConfig(BSP_GPIO_PC4_PORT,
+                    BSP_GPIO_PC4_PIN,
+                    BSP_GPIO_PC4_PIN,          // Interrupt Number
+                    false,                     // RisingEdge  Disable
+                    true,                      // FallingEdge Enable
+                    true                       // interrupt   Enable
+					);
+
+  /* Enable EVEN interrupt to catch button press that changes slew rate */
+  NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
+  NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+  NVIC_DisableIRQ(GPIO_EVEN_IRQn);
+#else
+  /* Configure Button PB1 as input and enable interrupt */
+  GPIO_PinModeSet(BSP_GPIO_PC5_PORT, BSP_GPIO_PC5_PIN, gpioModeInputPull, 1);
+  GPIO_ExtIntConfig(BSP_GPIO_PC5_PORT,
+                    BSP_GPIO_PC5_PIN,
+                    BSP_GPIO_PC5_PIN,
+                    false,
+                    true,
+                    true);
+
+  /* Enable ODD interrupt to catch button press that changes slew rate */
+  NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+  NVIC_EnableIRQ(GPIO_ODD_IRQn);
+  NVIC_DisableIRQ(GPIO_ODD_IRQn);
+#endif
+}
+
+#ifdef USING_INT_PC4
+/**************************************************************************//**
+ * @brief GPIO Interrupt handler for even pins.
+ *****************************************************************************/
+void GPIO_EVEN_IRQHandler(void)
+{
+  /* Get and clear all pending GPIO interrupts */
+  uint32_t interruptMask = GPIO_IntGet();
+  GPIO_IntClear(interruptMask);
+
+  /* Check if button 0 was pressed */
+  if (interruptMask & (1 << BSP_GPIO_PC4_PIN))
+  {
+	  sh_irq_handler();
+  }
+}
+#else
+/**************************************************************************//**
+ * @brief GPIO Interrupt handler for even pins.
+ *****************************************************************************/
+void GPIO_ODD_IRQHandler(void)
+{
+  /* Get and clear all pending GPIO interrupts */
+  uint32_t interruptMask = GPIO_IntGet();
+  GPIO_IntClear(interruptMask);
+
+  /* Check if button 1 was pressed */
+  if (interruptMask & (1 << BSP_GPIO_PC5_PIN))
+  {
+	  //sh_irq_handler();
+	  irq_handler();
+  }
+}
+#endif
+
+void sh_init_hwcomm_interface(void){
+#if 1
+	mfioGPIOSetup();
+  //irq_pin_fall();
+#elif 0
+	reset_pin_input();
+	reset_pin_mode_PullUp();
+	mfio_pin_input();                   /*set mfio as input for getting mfio event reporting when sesnor hub is on  application mode */
+	mfio_pin_mode_PullUp();
+	irq_pin_fall();                     /*attach falling edge interrupt to mfio pin for mfio event reporting */
+#else
+	reset_pin_output();
+	mfio_pin_output();
+
+	reset_pin_write(0);
+	mfio_pin_write(1);
+	wait_ms(10);
+	reset_pin_write(1);
+
+	wait_ms(2000);
+
+	reset_pin_input();
+	reset_pin_mode_PullUp();
+	mfio_pin_input();                   /*set mfio as input for getting mfio event reporting when sesnor hub is on  application mode */
+	mfio_pin_mode_PullUp();
+
+	irq_pin_fall();                    //sh_irq_handler);    /*attach falling edge interrupt to mfio pin for mfio event reporting */
+#endif
+  //isHubCommInited = 1;
+    return;
+}
+
+/**************************************************************************//**
+ * @brief Setup GPIO interrupt for pushbuttons.
+ *****************************************************************************/
+#define USING_INT_PC5
+
 void ss_enable_irq(void)
 {
 #ifndef BPT_POLL_MODE
 	irq_pin.enable_irq();
+#else
+	#ifdef USING_INT_PC4
+		NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+	#else
+		NVIC_EnableIRQ(GPIO_ODD_IRQn);
+	#endif
 #endif
 }
 void ss_disable_irq(void)
 {
 #ifndef BPT_POLL_MODE
 	irq_pin.disable_irq();
+#else
+	#ifdef USING_INT_PC4
+		NVIC_DisableIRQ(GPIO_EVEN_IRQn);
+	#else
+		NVIC_DisableIRQ(GPIO_ODD_IRQn);
+	#endif
 #endif
 }
 
@@ -315,6 +509,7 @@ const char* get_ss_algo_version(void)
 
     return &algo_version[0];
 }
+
 const char* get_ss_platform_name(void)
 {
     uint8_t cmd_bytes[] = { SS_FAM_R_IDENTITY, SS_CMDIDX_PLATTYPE };
@@ -339,6 +534,14 @@ const char* get_ss_platform_name(void)
             	plat_name = SS_PLATFORM_MAX32660;
 			}
         }
+        else
+        {
+        	plat_name = "SS_ERR_UNKNOWN";                                        // Added by Jason Chen
+        }
+    }
+    else
+    {
+    	plat_name = "read_cmd: error!";                                        // Added by Jason Chen
     }
 
     return plat_name;
@@ -696,10 +899,10 @@ SS_STATUS get_algo_cfg(int algo_idx, int cfg_idx, uint8_t *cfg, int cfg_sz)
 
 SS_STATUS set_data_type(int data_type1, bool sc_en1)
 {
-	assert_msg((data_type >= 0) && (data_type <= 3), "Invalid value for data_type");
+	assert_msg((data_type1 >= 0) && (data_type1 <= 3), "Invalid value for data_type");
 	uint8_t cmd_bytes[] = { SS_FAM_W_COMMCHAN, SS_CMDIDX_OUTPUTMODE };
-	uint8_t data_bytes[] = { (uint8_t)((sc_en ? SS_MASK_OUTPUTMODE_SC_EN : 0) |
-							((data_type << SS_SHIFT_OUTPUTMODE_DATATYPE) & SS_MASK_OUTPUTMODE_DATATYPE)) };
+	uint8_t data_bytes[] = { (uint8_t)((sc_en1 ? SS_MASK_OUTPUTMODE_SC_EN : 0) |
+							((data_type1 << SS_SHIFT_OUTPUTMODE_DATATYPE) & SS_MASK_OUTPUTMODE_DATATYPE)) };
 
 	SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), &data_bytes[0], ARRAY_SIZE(data_bytes), SS_DEFAULT_CMD_SLEEP_MS);
 	data_type = data_type1;
@@ -772,26 +975,26 @@ SS_STATUS ss_comm_check(void)
 	return status;
 }
 
-static void fifo_sample_size(int data_type, int *sample_size)
+static void fifo_sample_size(int data_type1, int *sample_size1)
 {
-	*sample_size = 0;
+	*sample_size1 = 0;
 
-	if (data_type == SS_DATATYPE_RAW || data_type == SS_DATATYPE_BOTH) {
+	if (data_type1 == SS_DATATYPE_RAW || data_type1 == SS_DATATYPE_BOTH) {
 		for (int i = 0; i < SS_MAX_SUPPORTED_SENSOR_NUM; i++) {
 			if (sensor_enabled_mode[i])
 			{
 				assert_msg(sensor_data_reqs[i], "no ss_data_req found for enabled sensor");
-				*sample_size += sensor_data_reqs[i]->data_size;
+				*sample_size1 += sensor_data_reqs[i]->data_size;
 			}
 		}
 	}
 
-	if (data_type == SS_DATATYPE_ALGO || data_type == SS_DATATYPE_BOTH) {
+	if (data_type1 == SS_DATATYPE_ALGO || data_type1 == SS_DATATYPE_BOTH) {
 		for (int i = 0; i < SS_MAX_SUPPORTED_ALGO_NUM; i++) {
 			if(algo_enabled_mode[i])
 			{
 				assert_msg(algo_data_reqs[i], "no ss_data_req found for enabled algo");
-				*sample_size += algo_data_reqs[i]->data_size;
+				*sample_size1 += algo_data_reqs[i]->data_size;
 			}
 		}
 	}
@@ -830,10 +1033,10 @@ SS_STATUS get_log_len(int *log_len)
 }
 
 SS_STATUS read_fifo_data(
-	int num_samples, int sample_size,
+	int num_samples, int sample_size1,
 	uint8_t* databuf, int databuf_sz)
 {
-	int bytes_to_read = num_samples * sample_size + 1; //+1 for status byte
+	int bytes_to_read = num_samples * sample_size1 + 1; //+1 for status byte
 	assert_msg((bytes_to_read <= databuf_sz), "databuf too small");
 
 	uint8_t cmd_bytes[] = { SS_FAM_R_OUTPUTFIFO, SS_CMDIDX_READFIFO };
@@ -877,7 +1080,10 @@ void ss_execute_once(void){
         prevTime_ms = currTime;
 #endif
 
+#if DEBUG_LEVEL
 	uint8_t sample_count;
+#endif
+
 	m_irq_received_ = false;
 	uint8_t cmd_bytes[] = { SS_FAM_R_STATUS, SS_CMDIDX_STATUS };
 	uint8_t rxbuf[2] = {0};
@@ -890,9 +1096,9 @@ void ss_execute_once(void){
 								0, 0,
 								&rxbuf[0], ARRAY_SIZE(rxbuf), SS_DEFAULT_CMD_SLEEP_MS);
 	if (status != SS_SUCCESS) {
-		pr_err("Couldn't read status byte of SmartSensor!");
+		printLog("Couldn't read status byte of SmartSensor!");
 		ss_enable_irq();
-		pr_err("%s:%d\n", __func__, __LINE__);
+		printLog("SSI:%d\r\n", __LINE__);
 		//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
         printf("\r\n");
@@ -904,17 +1110,17 @@ void ss_execute_once(void){
 	//printf("status= %d \r\n" , rxbuf[1]);
 
 	if (rxbuf[1] & SS_MASK_STATUS_ERR) {
-		pr_err("SmartSensor status error: %d", rxbuf[1] & SS_MASK_STATUS_ERR);
+		printLog("SmartSensor status error: %d\r\n", rxbuf[1] & SS_MASK_STATUS_ERR);
 	}
 	if (rxbuf[1] & SS_MASK_STATUS_FIFO_OUT_OVR) {
-		pr_err("SmartSensor Output FIFO overflow!");
+		printLog("SmartSensor Output FIFO overflow!\r\n");
 	}
 	if (rxbuf[1] & SS_MASK_STATUS_FIFO_IN_OVR) {
-		pr_err("SmartSensor Input FIFO overflow!");
+		printLog("SmartSensor Input FIFO overflow!\r\n");
 	}
 
 	if (rxbuf[1] & SS_MASK_STATUS_LOG_OVR) {
-		pr_err("SmartSensor log overflow!");
+		printLog("SmartSensor log overflow!\r\n");
 	}
 
 	if (rxbuf[1] & SS_MASK_STATUS_LOG_RDY) {
@@ -924,7 +1130,7 @@ void ss_execute_once(void){
 		status = get_log_len(&log_len);
 		if (status != SS_SUCCESS)
 		{
-			pr_err("Couldn't read log lenght");
+			printLog("Couldn't read log lenght\r\n");
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
@@ -938,7 +1144,7 @@ void ss_execute_once(void){
 		status = read_ss_log(log_len, &databuf[0], sizeof(databuf));
 		if (status != SS_SUCCESS)
 		{
-			pr_err("Couldn't read from SmartSensor Log");
+			printLog("Couldn't read from SmartSensor Log\r\n");
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
@@ -957,7 +1163,7 @@ void ss_execute_once(void){
 		status = num_avail_samples(&num_samples);
 		if (status != SS_SUCCESS)
 		{
-			pr_err("Couldn't read number of available samples in SmartSensor Output FIFO");
+			pr_err("Couldn't read number of available samples in SmartSensor Output FIFO, SSI:%d\r\n",__LINE__);
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
@@ -969,27 +1175,27 @@ void ss_execute_once(void){
 		//BLE::Instance().waitForEvent();
 
 #ifdef DEBUG_TIMING_PROFILE
-		printf("Num of sample = %d \r\n", num_samples);
+		printLog("Num of sample = %d, SSI:%d\r\n", num_samples, __LINE__);
 #endif
 		//printf("nsamp = %d \r\n", num_samples);
 
-		int sample_size;
-		fifo_sample_size(data_type, &sample_size);
+		int sample_size2;
+		fifo_sample_size(data_type, &sample_size2);
 
-		int bytes_to_read = num_samples * sample_size + 1; //+1 for status byte
+		int bytes_to_read = num_samples * sample_size2 + 1; //+1 for status byte
 		if ((uint32_t)bytes_to_read > sizeof(databuf)) {
 			//Reduce number of samples to read to fit in buffer
-			num_samples = (sizeof(databuf) - 1) / sample_size;
+			num_samples = (sizeof(databuf) - 1) / sample_size2;
 		}
 
 		//wait_ms(5);
 
 		//printf("nbytes to read  = %d \r\n", bytes_to_read);
-
-		status = read_fifo_data(num_samples, sample_size, &databuf[0], sizeof(databuf));
+		pr_info("Num of sample = %d, size = %d SSI:%d\r\n", num_samples, sample_size2, __LINE__);
+		status = read_fifo_data(num_samples, sample_size2, &databuf[0], sizeof(databuf));
 		if (status != SS_SUCCESS)
 		{
-			printf("Couldn't read from SmartSensor Output FIFO");
+			printLog("Couldn't read from SmartSensor Output FIFO, SSI:%d", __LINE__);
 			ss_enable_irq();
 			//irq_evt.stop();
 			return;
@@ -1003,8 +1209,10 @@ void ss_execute_once(void){
 		int i = 0;
 		for (i = 0; i < num_samples; i++) {
 			if (sc_en) {
+#if DEBUG_LEVEL
 				sample_count = *data_ptr++;
 				printLog("Received sample #%d", sample_count);
+#endif
 			}
 				
 			//Chop up data and send to modules with enabled sensors
@@ -1013,7 +1221,7 @@ void ss_execute_once(void){
 					if (sensor_enabled_mode[i])
 					{
 						assert_msg(sensor_data_reqs[i], "no ss_data_req found for enabled sensor");
-						//??Jason sensor_data_reqs[i]->callback(data_ptr);
+						sensor_data_reqs[i]->rx_data_parser(data_ptr);
 						data_ptr += sensor_data_reqs[i]->data_size;
 					}
 				}
@@ -1023,7 +1231,7 @@ void ss_execute_once(void){
 					if (algo_enabled_mode[i]) {
 						assert_msg(algo_data_reqs[i], 
 								"no ss_data_req found for enabled algo");
-						//??Jason algo_data_reqs[i]->callback(data_ptr);
+						algo_data_reqs[i]->rx_data_parser(data_ptr);
 						data_ptr += algo_data_reqs[i]->data_size;
 					}
 				}
@@ -1042,11 +1250,6 @@ void ss_execute_once(void){
 
 void ss_clear_interrupt_flag(void){
 	m_irq_received_ = false;
-}
-
-void irq_handler(void)
-{
-	m_irq_received_ = true;
 }
 
 void ss_irq_handler_selftest(void){

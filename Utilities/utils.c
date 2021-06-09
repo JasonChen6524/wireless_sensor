@@ -164,19 +164,26 @@ int parse_cmd_data32(const char* str, const char* cmd, uint32_t *vals, int vals_
 	const char* sptr = str + strlen(cmd);
 	int found = 0;
 	int ssfound;
+	uint32_t val32;
 
 	while (found < vals_sz) {
-		while (*sptr != ' ' && *sptr != '\0') { sptr++; }
+		while (*sptr != ' ' && *sptr != '\0')
+		{
+			sptr++;
+		}
 		if (*sptr == '\0')
 			break;
 		sptr++;
 
 		if (hex)
-			ssfound = sscanf(sptr, "%x", (unsigned int*)(vals + found));
+		  //ssfound = sscanf(sptr, "%x", (uint32_t*)(vals + found));
+		    ssfound = sscanf(sptr, "%x", (unsigned int*)&val32);
 		else
-			ssfound = sscanf(sptr, "%d", (int*)(vals + found));
+		  //ssfound = sscanf(sptr, "%d", (uint32_t*)(vals + found));
+		    ssfound = sscanf(sptr, "%d", (int*)&val32);
 		if (ssfound != 1)
 			break;
+		*(vals + found) = (uint32_t)val32;
 		found++;
 	}
 
