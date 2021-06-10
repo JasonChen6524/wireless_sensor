@@ -49,7 +49,7 @@ int num_sensors;
 SensorComm sensor_list_t[DS_MAX_NUM_SENSORCOMMS];
 SensorComm* sensor_list = (SensorComm*)(&sensor_list_t[0]);
 
-bool calibration_success = false;
+//bool calibration_success = false;
 volatile uint8_t ds_console_interface_exists_;
 //volatile uint8_t ds_ble_interface_exists_;
 
@@ -309,7 +309,7 @@ void DSInterface_BuildCommand(char ch)
 	static int count_c = 0;
 	//if (!this->silent_mode) /* BUG: POTENTIAL BUG, what uart port to echo, not only console */
 	count_c++;
-	if(count_c < 64)
+	if(count_c < (54 + 23 - 1))
 		printLog("%c", ch);
 
 	if (ch == 0x00) {
@@ -320,6 +320,8 @@ void DSInterface_BuildCommand(char ch)
 	if ((ch == '\n') || (ch == '\r')) {
 		if (cmd_idx < (int)CONSOLE_STR_BUF_SZ)
            cmd_str[cmd_idx++] = '\0';
+		if(count_c >= (54 + 23 - 1))
+			printLog("... ");
 		DSInterface_parse_command();
 		count_c = 0;
 

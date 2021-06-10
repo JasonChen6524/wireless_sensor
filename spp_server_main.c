@@ -254,13 +254,13 @@ U8 sectic = TIC_TIMER_PERSEC;
 
    //bpt_main();   // For Bio-Sensor estimation -
     data_report_execute();
-
+#if 0
     if(calibration_success)
     {
     	calibration_success = false;
     	DSInterface_BuildCommand_itself();
     }
-
+#endif
     if(_main_state == STATE_SPP_MODE)
     {
     	/* If SPP data mode is active, use non-blocking gecko_peek_event() */

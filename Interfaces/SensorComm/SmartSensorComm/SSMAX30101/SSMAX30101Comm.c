@@ -1589,25 +1589,17 @@ static uint8_t parse_command_00(const char* cmd)
 
 					if (status == SS_SUCCESS)
 					{
-						/*data_len = */snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
-						charbuf[64 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s....... err=%d\r\n", charbuf, COMM_SUCCESS);
-						//printLog("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
-						//printLog("\r\nset_cfg bpt cal_result err=%d\r\n\r\n", COMM_SUCCESS);
-						//data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);
-						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\n\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
-						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\n\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_SUCCESS);
+						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
 					}
 					else
 					{
-						/*data_len = */snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						charbuf[64 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s....... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
-						//printLog("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						//printLog("\r\nset_cfg bpt cal_result err=%d\r\n\r\n", COMM_GENERAL_ERROR);
-						//data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						//data_len =   snprintf(charbuf,sizeof(charbuf),"\r\n\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\n\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
+						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
 					}
 					//ble_response = true;
 				} break;
@@ -1832,7 +1824,7 @@ static int data_report_execute_00(char* buf, int size)
 	bpt_mode1_2_data bpt_sample = { 0 };
 	int16_t data_len = 0;
     static uint8_t reportCnt = 0;
-    static uint8_t prog_count = 0;
+    //static uint8_t prog_count = 0;
 
 	if (size <= 0)
 		return 0;
@@ -2044,7 +2036,7 @@ static int data_report_execute_00(char* buf, int size)
 			  /* if( bpt_sample.status == 0x2 )
 				   pr_info("\r\n GOZUN AYDIN \r\n %d ",  bpt_sample.prog);*/
 #endif
-
+#if 0
 				if(data_report_mode == read_bpt_0)
 				{
 				  if(prog_count++ > 100)
@@ -2057,10 +2049,7 @@ static int data_report_execute_00(char* buf, int size)
 					  }
 				  }
 				}
-				else
-				{
-
-				}
+#endif
 			}
 		} break;
 
@@ -2091,8 +2080,8 @@ static int data_report_execute_00(char* buf, int size)
 	return data_len;
 }
 
-extern void sensor_reset(void);
-extern void bpt_init(void);
+//extern void sensor_reset(void);
+//extern void bpt_init(void);
 void stop_00(void)
 {
 	//int i;
@@ -2150,15 +2139,15 @@ void stop_00(void)
 #endif
 
     printLog("\r\nAll Queue reset on stop cmd, MAX30101:Line=%d\r\n", __LINE__);           // Modified by Jason
-    data_report_mode = 0;
+    //data_report_mode = 0;
 	ss_clear_interrupt_flag();
 	//ss_enable_irq();
 	//comm_mutex.unlock();
 
 
-	//sensor_reset();
-	NVIC_SystemReset();
-	//bpt_init();
+	if(data_report_mode == read_bpt_1)
+		NVIC_SystemReset();
+	data_report_mode = 0;                                                                   //bpt_init();
 
 }
 

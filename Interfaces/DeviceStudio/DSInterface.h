@@ -30,7 +30,7 @@ void DSInterface_BuildCommand(char ch);
 
 void data_report_execute(void);
 
-extern bool calibration_success;
+//extern bool calibration_success;
 void DSInterface_BuildCommand_itself(void);
 
 /**
