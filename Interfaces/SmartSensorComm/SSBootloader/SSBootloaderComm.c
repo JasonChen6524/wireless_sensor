@@ -267,7 +267,7 @@ static uint8_t parse_command_01(const char* cmd)
 
                 case cmd_reset:
                 {
-					SS_STATUS status = reset();
+					SS_STATUS status = sensorHub_reset();
                     if (status == SS_SUCCESS)
                         pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
                     else

@@ -36,7 +36,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "MaximSensor.h"
+#include "app.h"
+//#include "MaximSensor.h"
 //#include "EventStats.h"
 
 #define SS_PLATFORM_MAX3263X               "SmartSensor_MAX3263X"
@@ -317,19 +318,13 @@ typedef enum {
 #define SS_MAX_SUPPORTED_MODE_NUM	    10//0xFF                                           Modified by Jason
 
 extern void wait_ms(uint16_t wait_ms);
-#if 0
-typedef struct {
-	int data_size;
-	Callback<void(uint8_t*)> callback;
-} ss_data_req;
-#else
+
 //function pointer use to perform arithmetic operation
 typedef void (*rx_data_callback)(uint8_t *);
 typedef struct {
 	int data_size;
 	rx_data_callback rx_data_parser;
 } ss_data_req;
-#endif
 
 typedef union {
 	struct {
@@ -443,7 +438,7 @@ void ss_clear_mfio_event_flag(void);
 	 *
 	 * @return 	SS_STATUS code indicating success
 	 */ 
-	SS_STATUS reset(void);
+	SS_STATUS sensorHub_reset(void);
 
 	/**
 	 * @brief 		run the self test commands
@@ -654,68 +649,5 @@ void ss_clear_mfio_event_flag(void);
 
 	//extern char fw_version[128];
 	//extern char algo_version[128];
-
-//private:
-#if 0
-	/* PRIVATE VARIABLES */
-	I2C *m_i2cBus;
-	SPI *m_spiBus;
-	DigitalInOut mfio_pin;
-	DigitalInOut reset_pin;
-	InterruptIn irq_pin;
-
-    char fw_version[128];
-    char algo_version[128];
-    const char* plat_name;
-
-	bool in_bootldr;
-	bool sc_en;
-	int data_type;
-
-	int sensor_enabled_mode[SS_MAX_SUPPORTED_SENSOR_NUM];
-    ss_data_req* sensor_data_reqs[SS_MAX_SUPPORTED_SENSOR_NUM];
-    
-	int algo_enabled_mode[SS_MAX_SUPPORTED_ALGO_NUM];
-	ss_data_req* algo_data_reqs[SS_MAX_SUPPORTED_ALGO_NUM];
-
-    /* PRIVATE METHODS */
-    SS_STATUS write_cmd_small(uint8_t *cmd_bytes, int cmd_bytes_len,
-                            uint8_t *data, int data_len,
-                            int sleep_ms = SS_DEFAULT_CMD_SLEEP_MS);
-    SS_STATUS write_cmd_medium(uint8_t *cmd_bytes, int cmd_bytes_len,
-                            uint8_t *data, int data_len,
-                            int sleep_ms = SS_DEFAULT_CMD_SLEEP_MS);
-    SS_STATUS write_cmd_large(uint8_t *cmd_bytes, int cmd_bytes_len,
-                            uint8_t *data, int data_len,
-                            int sleep_ms = SS_DEFAULT_CMD_SLEEP_MS);
-	void cfg_mfio(PinDirection);
-
-	void irq_handler();
-	volatile bool m_irq_received_;
-
-
-	void irq_handler_selftest();
-	volatile bool mfio_int_happened;
-
-	SS_STATUS read_fifo_data(int num_samples, int sample_size, uint8_t* databuf, int databuf_sz);
-	SS_STATUS num_avail_samples(int* num_samples);
-	SS_STATUS get_log_len(int *log_len);
-	SS_STATUS read_ss_log(int num_bytes, uint8_t *log_buf, int log_buf_sz);
-	void fifo_sample_size(int data_type, int* sample_size);
-
-
-	void MfioEventEmulator_callBack(void){
-#ifdef BPT_POLL_MODE
-		m_irq_received_ = true;
-#endif
-	}
-
-
-	Ticker MfioEventEmulator;
-
-#endif
-//	EventStats irq_evt;
-//};
-
 
 #endif

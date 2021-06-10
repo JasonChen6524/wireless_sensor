@@ -56,6 +56,11 @@
 	#define printBleDebug(...)
 #endif
 
+typedef struct {
+    uint8_t addr;
+    uint32_t val;
+} addr_val_pair;
+
 typedef const char* (*get_type_callback)(void);
 typedef uint8_t (*is_visible_callback)(void);
 typedef int (*get_part_info_callback)(uint8_t*, uint8_t*);
@@ -68,6 +73,19 @@ typedef void (*stop_callback) (void);
 typedef uint8_t (*parse_command_callback)(const char*);
 typedef int  (*data_report_execute_callback)(char*, int);
 
+typedef struct
+{
+	get_type_callback get_type;
+	get_part_name_callback get_part_name;
+	get_algo_ver_callback get_algo_ver;
+	get_part_info_callback get_part_info;
+	is_visible_callback is_visible;
+  //is_enabled_callback is_enabled;
+	stop_callback stop;
+	parse_command_callback parse_command;
+	data_report_execute_callback data_report_execute;
+	SensorComm_Set_Ble_Status_callback SensorComm_Set_Ble_Status;
+} SensorComm;
 
 #define DS_MAX_NUM_SENSORCOMMS	8
 

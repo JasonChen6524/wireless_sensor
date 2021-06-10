@@ -228,7 +228,7 @@ extern int m_i2cBus_read(U8 addr, U8 *data, U16 len);                           
 //extern const struct rgbcolor led_75[];
 //extern const struct rgbcolor led_95[];
 
-
+extern void sensor_reset(void);
 
 #endif                      // Avoid multiple inclusion
 

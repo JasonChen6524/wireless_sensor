@@ -35,7 +35,7 @@
 #define _SSBOOTLOADERCOMM_H_
 
 #include <stdlib.h>
-#include "SensorComm.h"
+//#include "SensorComm.h"
 #include "SSInterface.h"
 #include "app.h"
 

@@ -11,7 +11,6 @@
 #include "app.h"
 #include "Peripherals.h"
 #include "DSInterface.h"
-#include "SensorComm.h"
 #include "assert.h"
 #include "spp_utils.h"
 #include "sl_sleeptimer.h"
@@ -78,12 +77,6 @@ void DSInterface_init(void)
 	ds_console_interface_exists_ = false;
 
 
-}
-
-void add_sensor_comm(SensorComm *s)
-{
-	//assert_msg(num_sensors < DS_MAX_NUM_SENSORCOMMS, "Too many sensors added to DSInterface. Increase DS_MAX_NUM_SENSORCOMMS.");
-	//sensor_list[num_sensors++] = s;
 }
 
 void SensorComm_create(void)

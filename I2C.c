@@ -7,6 +7,7 @@
  */
 
 // $[Library includes]
+#include <string.h>
 #include "global.h"
 #include "em_i2c.h"
 #include "i2c.h"
@@ -17,8 +18,8 @@
 #include "MAX14676E.h"
 #include "em_gpio.h"
 #include "hal-config.h"
-#include <string.h>
-//#include "periph.h"
+
+#include "SSInterface.h"
 
 struct ledplay ledseqset = LEDPLAY_INIT
 
@@ -51,7 +52,7 @@ void sensor_reset(void)
    ExpSetPins(EN5V_HIGH|RESET_LOW|MFIO_HIGH);
    wait_ms(500);
    ExpSetPins(EN5V_HIGH|RESET_HIGH|MFIO_HIGH);
-   wait_ms(500);
+   wait_ms(1500);
 }
 
 

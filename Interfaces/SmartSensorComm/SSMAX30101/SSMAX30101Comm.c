@@ -43,6 +43,7 @@
 #include "CRC8.h"
 
 #include "em_cmu.h"
+#include "I2C.h"
 
 #define ENABLE_WHRM_AND_SP02
 #define ENABLE_BPT
@@ -844,11 +845,11 @@ int execute_read_ppg_9(char* const buf, const int size){                        
 bool self_test_result_evaluate(const char *message, uint8_t result){
 	// check i2c response status
 	if(result != 0x00){
-		pr_info("%s has failed % 02X err<-1>\r\n", message, result);
+		printLog("%s has failed %02X err<-1>\r\n", message, result);
 		if((result & FAILURE_COMM))
-			pr_info("%s communication has failed err<-1>\r\n", message);
+			printLog("%s communication has failed err<-1>\r\n", message);
 		if(result & FAILURE_INTERRUPT)
-			pr_info("%s interrupt pin check has failed err<-1>\r\n", message);
+			printLog("%s interrupt pin check has failed err<-1>\r\n", message);
 		return false;
 	}
 	return true;
@@ -859,21 +860,21 @@ int selftest_max30101(void){
 	int ret;
 	uint8_t test_result;
 	bool test_failed = false;
-	pr_info("starting selftest_max30101\r\n");
+	printLog("starting selftest_max30101\r\n");
 	// configure mfio pin for self test
 	ss_mfio_selftest();
 	ret = self_test(SS_SENSORIDX_MAX30101, &test_result, 500);
 	if(ret != SS_SUCCESS){
-		pr_info("ss_int->self_test(SS_SENSORIDX_MAX30101, &test_result) has failed err<-1>\r\n");
+		printLog("self_test(SS_SENSORIDX_MAX30101, &test_result) has failed err = %d\r\n", ret);
 		test_failed = true;
 	}
 	// reset mfio pin to old state
 	if(!ss_reset_mfio_irq()){
-		pr_info("smart sensor reset_mfio_irq has failed err<-1>\r\n");
+		printLog("smart sensor reset_mfio_irq has failed err<-1>\r\n");
 		test_failed = true;
 	}
 	// reset the sensor to turn off the LED
-	ret = reset();
+	ret = sensorHub_reset();
 	if(test_failed | !self_test_result_evaluate("selftest_max30101", test_result)){
 		return -1;
 	}else{
@@ -882,20 +883,20 @@ int selftest_max30101(void){
 }
 
 
-int selftest_accelerometer(){
+int selftest_accelerometer(void){
 	int ret;
 	uint8_t test_result;
 	bool test_failed = false;
-	pr_info("starting selftest_accelerometer\r\n");
+	printLog("starting selftest_accelerometer\r\n");
 	ret = self_test(SS_SENSORIDX_ACCEL, &test_result, 1000);
 	if(ret != SS_SUCCESS){
-		pr_info("ss_int->self_test(SS_SENSORIDX_ACCEL, &test_result) has failed err<-1>\r\n");
+		printLog("self_test(SS_SENSORIDX_ACCEL, &test_result) has failed err = %d\r\n", test_result);
 		test_failed = true;
 	}
 	// reset the sensor to turn off the LED
-	ret = reset();
+	ret = sensorHub_reset();
 	if(ret != SS_SUCCESS){
-		pr_info("smart sensor reset has failed err<-1>\r\n");
+		printLog("smart sensor reset has failed err = %d\r\n", ret);
 		test_failed = true;
 	}
 	if(test_failed | !self_test_result_evaluate("selftest_accelerometer", test_result)){
@@ -905,7 +906,7 @@ int selftest_accelerometer(){
 	}
 }
 
-void set_sensorhub_accel(void)
+void set_sensorhub_accel_01(void)
 {
 
 }
@@ -955,6 +956,8 @@ static const char* get_algo_ver_00(void)
 	return get_ss_algo_version();
 }
 
+uint8_t cal_index_falg = 0;
+uint8_t index_val      = 0xFF;
 static uint8_t parse_command_00(const char* cmd)
 {
 	int ret,i;
@@ -1385,19 +1388,14 @@ static uint8_t parse_command_00(const char* cmd)
 						break;
 					}
 #endif
-					//comm_mutex.lock();
 					data_report_mode = read_bpt_1;
-					//comm_mutex.unlock();
-					//pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+                  //pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
 					data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);                  // Added by Jason
 
 					cal_data_flag = false;
 
 					ss_enable_irq();
 
-					//ss_int->start_emul_mfio_event(0.1);
-
-					//pr_info("___DEBUG: Estimation init completed with sucess %d  \r\n" , status);
 					ble_response = true;
 
 				} break;
@@ -1406,7 +1404,7 @@ static uint8_t parse_command_00(const char* cmd)
 				{
 					uint8_t addr;
 					uint32_t val;
-                    printf("  max30101 reg request \r\n");
+                    printLog("  max30101 reg request \r\n");
 					ret = parse_get_reg_cmd(cmd, sensor_type, &addr);
 					if (!ret) {
 						status = get_reg(SS_SENSORIDX_MAX30101, addr, &val);
@@ -1563,47 +1561,6 @@ static uint8_t parse_command_00(const char* cmd)
 
 				} break;
 
-				case set_cfg_bpt_cal_data:
-				{
-					uint8_t cal_data[824];
-					int k = i;
-
-					memset(cal_buf, 0, sizeof(cal_buf));
-					data_report_mode = set_cfg_bpt_cal_data;
-
-					//printLog(" \r\n __DEBUG Cal cmd pulled=");
-					//for(i= 0; i < 32/*1792*/ ; i++){
-					//	printLog("%c", *(cmd+i));
-					//}
-					//printLog("......\r\n");
-
-					ret = parse_cal_str(cmd, cmd_tbl[k], cal_data, 512);//sizeof(cal_data));
-
-					if (ret) {
-						printLog("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
-						snprintf(charbuf,sizeof(charbuf),"%s err=%d\r\n", cmd,COMM_INVALID_PARAM);
-						break;
-					}
-
-					status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_data[0], 512);//sizeof(cal_data));
-
-					if (status == SS_SUCCESS)
-					{
-						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
-						charbuf[16 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_SUCCESS);
-						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
-					}
-					else
-					{
-						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						charbuf[16 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
-						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
-					}
-					//ble_response = true;
-				} break;
-
 				case set_cfg_bpt_date_time:
 				{
 					//uint8_t rxBuff[6+1];
@@ -1725,35 +1682,89 @@ static uint8_t parse_command_00(const char* cmd)
 						break;
 					}
 
-					set_sensorhub_accel();
+					set_sensorhub_accel_01();
 					pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
 
+				} break;
+
+				case set_cfg_bpt_cal_data:
+				{
+					uint8_t cal_data[824];
+					int k = i;
+					//static bool cal_data_flag = false;
+
+					memset(cal_buf, 0, sizeof(cal_buf));
+					data_report_mode = set_cfg_bpt_cal_data;
+
+					//printLog(" \r\n __DEBUG Cal cmd pulled=");
+					//for(i= 0; i < 32/*1792*/ ; i++){
+					//	printLog("%c", *(cmd+i));
+					//}
+					//printLog("......\r\n");
+
+					ret = parse_cal_str(cmd, cmd_tbl[k], cal_data, 512);//sizeof(cal_data));
+					if (ret) {
+						printLog("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						snprintf(charbuf,sizeof(charbuf),"%s err=%d\r\n", cmd,COMM_INVALID_PARAM);
+						break;
+					}
+
+					if(!(cal_index_falg & (1 << index_val)))
+					{
+						status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_data[0], 512);//sizeof(cal_data));
+						cal_index_falg |= (1 << index_val);
+					}
+					else
+					{
+						printLog("---->The calibration data (index=%d) exists...\r\n", index_val);
+						status = SS_SUCCESS;
+					}
+
+					if (status == SS_SUCCESS)
+					{
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_SUCCESS);
+						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
+					}
+					else
+					{
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
+						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
+					}
+					//ble_response = true;
 				} break;
 
 				case set_cfg_bpt_cal_index:
 				{
 					uint8_t val;
+
 					ret = (parse_cmd_data(cmd, cmd_tbl[i], &val, 1, false) != 1);
-#if 0
-					if (ret) {
-						pr_info("\r\n%s err=%d, Line=%d\r\n", cmd, COMM_INVALID_PARAM, __LINE__);
-                        printLog("\r\n%s err=%d, Line=%d\r\n", cmd, COMM_INVALID_PARAM, __LINE__);
-						break;
-					}
-					else
-					{
-						printLog("\r\nIndex = %d, %s err=%d, Line=%d\r\n", val, cmd, COMM_SUCCESS, __LINE__);                    // Added by Jason
-					}
-#else
-				    if (ret == SS_SUCCESS){
+					if (ret == SS_SUCCESS){
 				    	;//data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
 
 					} else{
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
 						break;
 					}
-#endif
-				    status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_INDEX, &val, 1);                                      // Added by Jason
+					if(val > 4)
+					{
+						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						break;
+					}
+
+					index_val = val;
+					if(!(cal_index_falg & (1 << val)))
+					{
+						status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_INDEX, &val, 1);                                  // Added by Jason
+					}
+					else
+					{
+						printLog("--->The index value = %d exists...\r\n", val);
+						status = SS_SUCCESS;
+					}
 				    if (status == SS_SUCCESS){                                                                                   // Added by Jason
 				    	data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);                   // Added by Jason
 					} else{
@@ -2084,19 +2095,11 @@ static int data_report_execute_00(char* buf, int size)
 //extern void bpt_init(void);
 void stop_00(void)
 {
-	//int i;
 	//stop_emul_mfio_event();
 
-	//comm_mutex.lock();
 	ss_disable_irq();
 	printLog("\r\n Data_report_mode = %d, MAX30101:Line=%d\r\n", data_report_mode, __LINE__);           // Modified by Jason
-	//data_report_mode = 0;
 	sample_count = 0;
-
-    //for(i = 0; i < SS_NUM_CURRENT_SENSORS; i++)
-    {
-    	//disable_sensor(i);
-    }
 
 #ifdef ENABLE_SS_MAX30101
     disable_sensor(SS_SENSORIDX_MAX30101);
@@ -2110,13 +2113,6 @@ void stop_00(void)
 
     memset( accel_queue.base, 0, accel_queue.buffer_size);
 #endif
-
-
-    //for(i = 0; i < SS_NUM_CURRENT_ALGOS; i++)
-    {
-    	//disable_algo(i);
-    }
-
 
 #ifdef ENABLE_WHRM_AND_SP02
     if(data_report_mode == read_ppg_9)
@@ -2139,14 +2135,18 @@ void stop_00(void)
 #endif
 
     printLog("\r\nAll Queue reset on stop cmd, MAX30101:Line=%d\r\n", __LINE__);           // Modified by Jason
-    //data_report_mode = 0;
 	ss_clear_interrupt_flag();
 	//ss_enable_irq();
-	//comm_mutex.unlock();
 
+	//cal_index_falg = 0;
+	//index_val      = 0xFF;
+
+	//sensor_reset();
 
 	if(data_report_mode == read_bpt_1)
-		NVIC_SystemReset();
+	{
+		//NVIC_SystemReset();
+	}
 	data_report_mode = 0;                                                                   //bpt_init();
 
 }

@@ -39,16 +39,7 @@
 #include "assert.h"
 #include "utils.h"
 #include "I2C.h"
-#include "app.h"
 #include "sl_sleeptimer.h"
-
-
-//#include "em_device.h"
-//#include "em_gpio.h"
-//#include "global.h"
-//#include "SHComm.h"
-//#include "sl_sleeptimer.h"
-
 
 //#define DEBUG_TIMING_PROFILE
 
@@ -78,22 +69,6 @@ static ss_data_req* algo_data_reqs[SS_MAX_SUPPORTED_ALGO_NUM];
 
 void wait_ms(uint16_t wait_ms)
 {
-	//if(v3status.spp == 2)
-	//{
-	//  sl_sleeptimer_delay_millisecond(wait_ms);
-	//}
-	//else
-#if 0
-	{
-	  uint16_t ms_count = 0;
-	  if(wait_ms == 0) return;
-	  while(ms_count < wait_ms)
-	  {
-		delay_1ms();
-		ms_count++;
-	  }
-	}
-#else
 	uint32_t delay = sl_sleeptimer_ms_to_tick(wait_ms);
 	uint32_t curren_tick1 = sl_sleeptimer_get_tick_count();
 	uint32_t diff = 0;
@@ -103,7 +78,6 @@ void wait_ms(uint16_t wait_ms)
 		if(diff > delay)
 			return;
 	}
-#endif
 }
 
 void ss_clear_mfio_event_flag(void){
@@ -255,15 +229,24 @@ int ss_in_bootldr_mode(void)
 	return (rxbuf[1] & SS_MASK_MODE_BOOTLDR);
 }
 
-SS_STATUS reset(void)
+SS_STATUS sensorHub_reset(void)
 {
 	int bootldr = ss_in_bootldr_mode();
 	if (bootldr > 0)
+	{
+		printLog("reset_to_bootloader()....\r\n");
 		return reset_to_bootloader();
+	}
 	else if (bootldr == 0)
+	{
+		printLog("reset_to_main_app()....\r\n");
 		return reset_to_main_app();
+	}
 	else
+	{
+		printLog("SS_ERR_UNKNOWN reset....\r\n");
 		return SS_ERR_UNKNOWN;
+	}
 }
 
 SS_STATUS self_test(int idx, uint8_t *result, int sleep_ms){
@@ -415,27 +398,19 @@ void sh_init_hwcomm_interface(void){
 
 void ss_enable_irq(void)
 {
-#ifndef BPT_POLL_MODE
-	irq_pin.enable_irq();
-#else
 	#ifdef USING_INT_PC4
 		NVIC_EnableIRQ(GPIO_EVEN_IRQn);
 	#else
 		NVIC_EnableIRQ(GPIO_ODD_IRQn);
 	#endif
-#endif
 }
 void ss_disable_irq(void)
 {
-#ifndef BPT_POLL_MODE
-	irq_pin.disable_irq();
-#else
 	#ifdef USING_INT_PC4
 		NVIC_DisableIRQ(GPIO_EVEN_IRQn);
 	#else
 		NVIC_DisableIRQ(GPIO_ODD_IRQn);
 	#endif
-#endif
 }
 
 void ss_mfio_selftest(void){

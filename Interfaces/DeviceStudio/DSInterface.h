@@ -8,7 +8,7 @@
 #define DEVICESTUDIO_DSINTERFACE_H_
 
 
-#include "SensorComm.h"
+//#include "SensorComm.h"
 
 #define COMM_SUCCESS        0
 #define COMM_GENERAL_ERROR  -1
@@ -25,7 +25,8 @@
 
 void DSInterface_init(void);
 
-void add_sensor_comm(SensorComm *s);
+void SensorComm_create(void);
+
 void DSInterface_BuildCommand(char ch);
 
 void data_report_execute(void);

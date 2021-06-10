@@ -34,7 +34,6 @@
 #ifndef _SSMAX30101COMM_H_
 #define _SSMAX30101COMM_H_
 
-#include "SensorComm.h"
 #include "SSInterface.h"
 #include "queue.h"
 #include "app.h"

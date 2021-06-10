@@ -19,11 +19,10 @@
 /* Bluetooth stack headers */
 #include "bg_types.h"
 #include "native_gecko.h"
-#include "gatt_db.h"
 
 #include "app.h"
 #include "spp_utils.h"
-#include "SensorComm.h"
+#include "DSInterface.h"
 
 /* Main application */
 void appMain(gecko_configuration_t *pconfig)

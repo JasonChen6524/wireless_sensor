@@ -34,7 +34,6 @@
 #ifndef _SSGENERICCMD_H_
 #define _SSGENERICCMD_H_
 
-#include "SensorComm.h"
 #include "SSInterface.h"
 #include "queue.h"
 
