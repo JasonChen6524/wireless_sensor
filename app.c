@@ -42,5 +42,9 @@ void appMain(gecko_configuration_t *pconfig)
   //spp_main();
   printLog("* SPP server mode *\r\n");
 
+#ifdef DEBUG_TIMING_PROFILE
+  calibrationTimer_start();
+#endif
+
   spp_server_main();
 }

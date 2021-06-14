@@ -354,7 +354,7 @@ struct v3_otadat
 
 union v3_message_UNION
 {
-    U8 v3_buf8[V3_MAX_SIZE];
+   U8 v3_buf8[V3_MAX_SIZE];
    
    struct v3_message v3msg;
    struct v3_info    v3info;
@@ -369,10 +369,10 @@ union v3_message_UNION
    struct v3_hdr     v3hdr;
    struct v3_set     v3set;
    struct v3_sleep   v3sleep;
-   //struct v3_message v3ack;
+ //struct v3_message v3ack;
    struct v3_message v3nack;
-//   struct v3_otadat  v3otadat;
-} ;
+ //struct v3_otadat  v3otadat;
+};
 
 extern union v3_message_UNION v3msgU;
 

@@ -21,7 +21,7 @@
 #include "gecko_configuration.h"
 
 /* DEBUG_LEVEL is used to enable/disable debug prints. Set DEBUG_LEVEL to 1 to enable debug prints */
-#define DEBUG_LEVEL 1
+#define DEBUG_LEVEL   1
 
 /* Set this value to 1 if you want to disable deep sleep completely */
 #define DISABLE_SLEEP 1
@@ -103,5 +103,12 @@ void appMain(gecko_configuration_t *pconfig);
 bool BLE_Interface_Exists(void);
 int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, int32_t line);
 void BLE_reset_queue(void);
+
+#define DEBUG_TIMING_PROFILEx
+
+uint16_t calibrationTimer_read(void);
+void calibrationTimer_reset(void);
+void calibrationTimer_start(void);
+void calibrationTimer_stop(void);
 
 #endif

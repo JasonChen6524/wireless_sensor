@@ -297,13 +297,16 @@ static void DSInterface_parse_command(void)
 #endif
 }
 
+char cmd_str_log[54 + 23 + 1];
 void DSInterface_BuildCommand(char ch)
 {
 	static int count_c = 0;
 	//if (!this->silent_mode) /* BUG: POTENTIAL BUG, what uart port to echo, not only console */
 	count_c++;
 	if(count_c < (54 + 23 - 1))
-		printLog("%c", ch);
+	{
+		//printLog("%c", ch);
+	}
 
 	if (ch == 0x00) {
 		pr_err("Ignored char 0x00");
@@ -313,8 +316,14 @@ void DSInterface_BuildCommand(char ch)
 	if ((ch == '\n') || (ch == '\r')) {
 		if (cmd_idx < (int)CONSOLE_STR_BUF_SZ)
            cmd_str[cmd_idx++] = '\0';
-		if(count_c >= (54 + 23 - 1))
-			printLog("... ");
+		memcpy( &cmd_str_log[0], cmd_str , 54 + 23);
+		if(count_c >= (54 + 23))
+		{
+			cmd_str_log[54 + 23] = '\0';
+			printLog("%s....\r\n", cmd_str_log);
+		}
+		else
+			printLog("%s\r\n", cmd_str_log);
 		DSInterface_parse_command();
 		count_c = 0;
 

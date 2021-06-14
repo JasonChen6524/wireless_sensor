@@ -37,8 +37,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "app.h"
-//#include "MaximSensor.h"
-//#include "EventStats.h"
 
 #define SS_PLATFORM_MAX3263X               "SmartSensor_MAX3263X"
 #define SS_PLATFORM_MAX32660               "SmartSensor_MAX32660"
@@ -343,7 +341,7 @@ typedef union {
 
 #define BPT_POLL_MODE
 
-void sh_init_hwcomm_interface(void);
+void ss_init_hwcomm_interface(void);
 
 void ss_clear_mfio_event_flag(void);
 

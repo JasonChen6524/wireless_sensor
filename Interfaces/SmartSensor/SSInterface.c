@@ -61,12 +61,6 @@ static void fifo_sample_size(int data_type, int* sample_size1);
 static int algo_enabled_mode[SS_MAX_SUPPORTED_ALGO_NUM];
 static ss_data_req* algo_data_reqs[SS_MAX_SUPPORTED_ALGO_NUM];
 
-#ifdef DEBUG_TIMING_PROFILE
-	Timer debugTimer;
-	static int prevTime_ms;
-#endif
-
-
 void wait_ms(uint16_t wait_ms)
 {
 	uint32_t delay = sl_sleeptimer_ms_to_tick(wait_ms);
@@ -97,10 +91,6 @@ SSInterface::SSInterface(I2C &i2cBus, PinName ss_mfio, PinName ss_reset)
 #endif
 	reset_to_main_app();
 	get_data_type(&data_type, &sc_en);
-#ifdef DEBUG_TIMING_PROFILE
-	debugTimer.start();
-#endif
-
 }
 
 SSInterface::SSInterface(SPI &spiBus, PinName ss_mfio, PinName ss_reset)
@@ -287,11 +277,20 @@ static void irq_handler(void)
 /**************************************************************************//**
  * @brief Setup GPIO interrupt for pushbuttons.
  *****************************************************************************/
+#ifdef DEBUG_TIMING_PROFILE
+	static int prevTime_ms;
+#endif
+
 #define USING_INT_PC5
 static void mfioGPIOSetup(void)
 {
   /* Configure GPIO Clock */
 //CMU_ClockEnable(cmuClock_GPIO, true);
+
+#ifdef DEBUG_TIMING_PROFILE
+//	calibrationTimer_start();
+#endif
+
 #ifdef USING_INT_PC4
   /* Configure Button PC4 as input and enable interrupt */
   GPIO_PinModeSet(BSP_GPIO_PC4_PORT, BSP_GPIO_PC4_PIN, gpioModeInputPull, 1);
@@ -359,10 +358,11 @@ void GPIO_ODD_IRQHandler(void)
 }
 #endif
 
-void sh_init_hwcomm_interface(void){
+void ss_init_hwcomm_interface(void){
 #if 1
 	mfioGPIOSetup();
   //irq_pin_fall();
+
 #elif 0
 	reset_pin_input();
 	reset_pin_mode_PullUp();
@@ -394,7 +394,6 @@ void sh_init_hwcomm_interface(void){
 /**************************************************************************//**
  * @brief Setup GPIO interrupt for pushbuttons.
  *****************************************************************************/
-#define USING_INT_PC5
 
 void ss_enable_irq(void)
 {
@@ -1050,8 +1049,8 @@ void ss_execute_once(void){
 		return;
 
 #ifdef DEBUG_TIMING_PROFILE
-		int currTime = debugTimer.read_ms();
-        printf("ssevent_t= %d |   ", currTime - prevTime_ms);
+		int currTime = calibrationTimer_read();
+        printLog("ssevent_t= %3d |   ", 10*(currTime - prevTime_ms));
         prevTime_ms = currTime;
 #endif
 
@@ -1076,7 +1075,7 @@ void ss_execute_once(void){
 		printLog("SSI:%d\r\n", __LINE__);
 		//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
-        printf("\r\n");
+        printLog("\r\n");
 #endif
 		return;
 	}
@@ -1109,7 +1108,7 @@ void ss_execute_once(void){
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
-            printf("\r\n");
+            printLog("\r\n");
 #endif            
 			return;
 		}
@@ -1123,7 +1122,7 @@ void ss_execute_once(void){
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
-            printf("\r\n");
+            printLog("\r\n");
 #endif            
 			return;
 		}
@@ -1142,7 +1141,7 @@ void ss_execute_once(void){
 			ss_enable_irq();
 			//irq_evt.stop();
 #ifdef DEBUG_TIMING_PROFILE
-            printf("\r\n");
+            printLog("\r\n");
 #endif            
 			return;
 		}
@@ -1150,7 +1149,7 @@ void ss_execute_once(void){
 		//BLE::Instance().waitForEvent();
 
 #ifdef DEBUG_TIMING_PROFILE
-		printLog("Num of sample = %d, SSI:%d\r\n", num_samples, __LINE__);
+		printLog("Num of sample = %2d, SSI:%d\r\n", num_samples, __LINE__);
 #endif
 		//printf("nsamp = %d \r\n", num_samples);
 
@@ -1216,7 +1215,7 @@ void ss_execute_once(void){
     else
     {
 #ifdef DEBUG_TIMING_PROFILE
-       printf("\r\n");
+       printLog("\r\n");
 #endif        
     }
 	ss_enable_irq();

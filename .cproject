@@ -71,7 +71,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/bootloader}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/emdrv/spidrv/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/emdrv/dmadrv/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SHMAX30101}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/DeviceStudio}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/SmartSensor}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/SmartSensorComm/SSMAX30101}&quot;"/>
@@ -299,7 +298,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/bootloader}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/emdrv/spidrv/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/platform/emdrv/dmadrv/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SHMAX30101}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/DeviceStudio}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/SmartSensorComm/SSBootloader}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Interfaces/SmartSensorComm/SSGenericCmd}&quot;"/>

@@ -63,5 +63,4 @@
 #define pr_info(fmt, args...)
 #endif
 
-
 #endif // _PERIPHERALS_H_
