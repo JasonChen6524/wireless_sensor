@@ -26,6 +26,14 @@
 /* Set this value to 1 if you want to disable deep sleep completely */
 #define DISABLE_SLEEP 1
 
+#define VECTTOR_V3    0
+#if VECTTOR_V3
+#define HR_SPO2_HRV   0
+#define USE_OF_QUEUE  0
+#else
+#define HR_SPO2_HRV   1
+#endif
+
 #if DEBUG_LEVEL
 #include "retargetswo.h"
 #include <stdio.h>

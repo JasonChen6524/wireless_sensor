@@ -137,24 +137,26 @@ void v3_info_init(void)
 // on overflow, drop data (change later to return if not enough room)
 U8 v3_XmitQ(U8 *buf, U8 n)
 {
-#if 0
-	U8 i;
-	if (v3status.spp != STATE_SPP_MODE) return(0xFF);
-	for (i=0;i<n;i++)
-	{
-		v3CommBuf.tx[v3CommBuf.txhead++] = buf[i];
-      //v3CommBuf.txhead &= V3BUFMASK  // not needed for 256 size circular buffer
-		if (v3CommBuf.txhead==v3CommBuf.txtail) return(1);  // buffer overflow
-	}
-#else
-	U8 i;
-	U8 charbuf[512];
-	if (v3status.spp != STATE_SPP_MODE) return(0xFF);
-	for(i = 0; i < n; i++)
-	{
-		charbuf[i] = buf[i];
-	}
-	BLE_AddtoQueue(charbuf, 512, n, __LINE__);
+#if VECTTOR_V3
+	#if USE_OF_QUEUE
+		U8 i;
+		U8 charbuf[512];
+		if (v3status.spp != STATE_SPP_MODE) return(0xFF);
+		for(i = 0; i < n; i++)
+		{
+			charbuf[i] = buf[i];
+		}
+		BLE_AddtoQueue(charbuf, 512, n, __LINE__);
+	#else
+		U8 i;
+		if (v3status.spp != STATE_SPP_MODE) return(0xFF);
+		for (i=0;i<n;i++)
+		{
+			v3CommBuf.tx[v3CommBuf.txhead++] = buf[i];
+		  //v3CommBuf.txhead &= V3BUFMASK  // not needed for 256 size circular buffer
+			if (v3CommBuf.txhead==v3CommBuf.txtail) return(1);  // buffer overflow
+		}
+	#endif
 #endif
 	return(0);
 }
