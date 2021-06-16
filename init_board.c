@@ -35,7 +35,7 @@
 #include "mscflash.h"
 #include "app.h"
 
-extern void bpt_init(void);  // temporarily put here, should go elsewhere
+//extern void bpt_init(void);  // temporarily put here, should go elsewhere
 
 //#warning "WARNING: Custom boards contain no init code in initBoard. Please make sure you have created the init code needed for your board."
 void initBoard(void)

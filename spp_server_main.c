@@ -38,6 +38,7 @@
 #include "DSInterface.h"
 #include "peripherals.h"
 #include "utils.h"
+#include "SSMAX30101Comm.h"                                        // Added by Jason, 2021.06.15
 
 /***************************************************************************************************
   Local Macros and Definitions
@@ -149,7 +150,7 @@ int BLE_TransferMesSamplesFromQueue(void)
 		} while(result == bg_err_out_of_memory);
 
 		if (result != 0) {
-			pr_err("Unexpected error: %x\r\n", result);
+			printLog("spp Unexpected error: %x, Line:%d\r\n", result, __LINE__);
 		} else {
 			_sCounters.num_pack_sent++;
 			_sCounters.num_bytes_sent += BLE_NOTIFY_CHAR_ARR_SIZE;
@@ -168,6 +169,7 @@ bool BLE_Interface_Exists(void)
 int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, int32_t line) {
 
 	int ret = 0;
+	ds_pkt_bpt_data *pkt = (ds_pkt_bpt_data *)data_transfer;
 	//printf("size is: %d\r\n", size);
 	// TODO: Append a known character to the byte array in case size is
 	// less than 20 bytes
@@ -182,8 +184,14 @@ int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, 
 	}
 
 	if(ret != 0)
-		printLog("BLE_AddtoQueue has failed, ret=%d, Line:%d\r\n", ret, __LINE__);
-    pr_info("BLE_AddtoQueue, line=%d\r\n", (int)line);                         // Added by Jason
+		printLog("BLE_AddtoQueue has failed, ret=%d, Line:%d\r\n", ret, (int)line);
+	else
+	{
+		if(pkt->start_byte == DS_BINARY_PACKET_START_BYTE)
+		{
+			pr_info("BLE Queue, status=%d prog=%d line=%d\r\n", pkt->status, pkt->prog, line);                         // Added by Jason
+		}
+	}
 	return ret;
 }
 

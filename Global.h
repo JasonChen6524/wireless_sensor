@@ -69,6 +69,14 @@ Purpose : Global types etc.
   #define I32 signed long
 #endif
 
+typedef enum {
+	ST_COMMAND_MODE,
+	ST_EXAMPLEUSER_IDLE,                                            // Jason                 2021.0601
+	ST_EXAMPLEUSER_IDLE01                                            // Jason                 2021.0601
+}demo_appstate_t;
+
+extern demo_appstate_t appState;
+
 #endif                      // Avoid multiple inclusion
 
 /*************************** End of file ****************************/

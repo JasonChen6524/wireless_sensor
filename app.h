@@ -111,4 +111,7 @@ void calibrationTimer_reset(void);
 void calibrationTimer_start(void);
 void calibrationTimer_stop(void);
 
+void bpt_init(void);
+void bpt_reset(void);
+
 #endif

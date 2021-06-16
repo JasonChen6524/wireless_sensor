@@ -90,13 +90,7 @@
 #include "SSInterface.h"
 #include "utils.h"
 
-typedef enum {
-	ST_COMMAND_MODE,
-	ST_EXAMPLEUSER_IDLE,                                            // Jason                 2021.0601
-	ST_EXAMPLEUSER_IDLE01                                            // Jason                 2021.0601
-}demo_appstate_t;
-
-demo_appstate_t appState  = ST_COMMAND_MODE;
+demo_appstate_t appState  = ST_EXAMPLEUSER_IDLE01;//ST_COMMAND_MODE;
 
 sl_sleeptimer_timer_handle_t bpt_timer;
 static uint16_t bpt_second_count = 0;

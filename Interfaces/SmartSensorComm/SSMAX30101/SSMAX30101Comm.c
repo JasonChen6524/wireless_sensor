@@ -255,7 +255,7 @@ void bpt_data_rx(uint8_t* data_ptr)
 #endif
 	enqueue(&bpt_queue, &sample);
 
-#if DEBUG_LEVEL
+#if 0//DEBUG_LEVEL
     uint16_t hr21 = sample.hr / 10;
 
     uint16_t spo21 = sample.spo2/10;
@@ -1389,7 +1389,7 @@ static uint8_t parse_command_00(const char* cmd)
 					}
 #endif
 					data_report_mode = read_bpt_1;
-                  //pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+                    //printLog("%s err=%d\r\n", cmd, COMM_SUCCESS);
 					data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);                  // Added by Jason
 
 					cal_data_flag = false;
@@ -1554,10 +1554,11 @@ static uint8_t parse_command_00(const char* cmd)
 
 //					str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "00");
 					//printLog("\r\n%s value=%s err=%d, %d\r\n", cmd, cal_str, COMM_SUCCESS, sizeof(cal_result));
-					//data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=0102030405060708 err=%d\r\n", cmd,COMM_SUCCESS);
-					data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
+                    //data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
+					snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
 					//printLog("%s\r\n", cal_str);
-					ble_response = true;
+
+					//ble_response = true;
 
 				} break;
 
@@ -1571,16 +1572,16 @@ static uint8_t parse_command_00(const char* cmd)
 					uint32_t date_time[2];
 					ret = (parse_cmd_data32(cmd, cmd_tbl[i], date_time, 2, false) != 2);
 					if (ret) {
-						printLog("\r\n%s err=%d, MAX30101 Line:%d\r\n", cmd, COMM_INVALID_PARAM, __LINE__);
+						printLog("%s err=%d, MAX30101 Line:%d\r\n\r\n", cmd, COMM_INVALID_PARAM, __LINE__);
 						break;
 					}
 
 					status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_EST_DATE, (uint8_t*)date_time, sizeof(date_time));
-#if 0
+#if 1
 					if (status == SS_SUCCESS)
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						printLog("%s err=%d\r\n\r\n", cmd, COMM_SUCCESS);
 					else
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						printLog("%s err=%d\r\n\r\n", cmd, COMM_GENERAL_ERROR);
 
 #else
 				    if (status == SS_SUCCESS){
@@ -1590,22 +1591,22 @@ static uint8_t parse_command_00(const char* cmd)
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 					}
 #endif
-				    ble_response = true;
+				    //ble_response = true;
 				} break;
 				case set_cfg_bpt_nonrest:
 				{
 					uint8_t val;
 					ret = (parse_cmd_data(cmd, cmd_tbl[i], &val, 1, false) != 1);
 					if (ret) {
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						printLog("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
 						break;
 					}
 
 					status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_EST_NONREST, &val, 1);
 					if (status == SS_SUCCESS)
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						printLog("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
 					else
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						printLog("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 
 				} break;
 
@@ -1613,7 +1614,7 @@ static uint8_t parse_command_00(const char* cmd)
                 {
                     uint32_t coefs[3];
                     if(3 != parse_cmd_data32(cmd, cmd_tbl[i], coefs, 3, true)){
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						printLog("%s err=%d\r\n\r\n", cmd, COMM_INVALID_PARAM);
                         break;
                     }
 					// Reformat for MSB first
@@ -1623,11 +1624,11 @@ static uint8_t parse_command_00(const char* cmd)
 										   };
 
                     status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, &CalCoef[0], sizeof(CalCoef));
-#if 0
+#if 1
 					if (status == SS_SUCCESS)
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						printLog("%s err=%d\r\n\r\n", cmd, COMM_SUCCESS);
 					else
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						printLog("%s err=%d\r\n\r\n", cmd, COMM_GENERAL_ERROR);
 #else
 				    if (status == SS_SUCCESS){
 				    	data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
@@ -1694,7 +1695,7 @@ static uint8_t parse_command_00(const char* cmd)
 					//static bool cal_data_flag = false;
 
 					memset(cal_buf, 0, sizeof(cal_buf));
-					data_report_mode = set_cfg_bpt_cal_data;
+					data_report_mode = 0;//set_cfg_bpt_cal_data;
 
 					//printLog(" \r\n __DEBUG Cal cmd pulled=");
 					//for(i= 0; i < 32/*1792*/ ; i++){
@@ -1703,9 +1704,11 @@ static uint8_t parse_command_00(const char* cmd)
 					//printLog("......\r\n");
 
 					ret = parse_cal_str(cmd, cmd_tbl[k], cal_data, 512);//sizeof(cal_data));
+					snprintf(charbuf,sizeof(charbuf),"%s\r\n", cmd);
+					charbuf[77] = '\0';
 					if (ret) {
-						printLog("\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
-						snprintf(charbuf,sizeof(charbuf),"%s err=%d\r\n", cmd,COMM_INVALID_PARAM);
+						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_INVALID_PARAM, __LINE__);
 						break;
 					}
 
@@ -1719,7 +1722,7 @@ static uint8_t parse_command_00(const char* cmd)
 						printLog("---->The calibration data (index=%d) exists...\r\n", index_val);
 						status = SS_SUCCESS;
 					}
-
+#if 0
 					if (status == SS_SUCCESS)
 					{
 						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
@@ -1735,6 +1738,19 @@ static uint8_t parse_command_00(const char* cmd)
 						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
 					}
 					//ble_response = true;
+#else
+					if (status == SS_SUCCESS)
+					{
+						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);
+						printLog("%s.... err=%d\r\n\r\n", charbuf, COMM_SUCCESS);
+					}
+					else
+					{
+						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_GENERAL_ERROR, __LINE__);
+					}
+
+#endif
 				} break;
 
 				case set_cfg_bpt_cal_index:
@@ -1746,11 +1762,13 @@ static uint8_t parse_command_00(const char* cmd)
 				    	;//data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
 
 					} else{
+						//printLog("%s err=%d\r\n\r\n", cmd, COMM_INVALID_PARAM);
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
 						break;
 					}
 					if(val > 4)
 					{
+						//printLog("%s err=%d\r\n\r\n", cmd, COMM_INVALID_PARAM);
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
 						break;
 					}
@@ -1766,8 +1784,10 @@ static uint8_t parse_command_00(const char* cmd)
 						status = SS_SUCCESS;
 					}
 				    if (status == SS_SUCCESS){                                                                                   // Added by Jason
+				    	//printLog("%s err=%d\r\n\r\n", cmd, COMM_SUCCESS);
 				    	data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);                   // Added by Jason
 					} else{
+						//printLog("%s err=%d\r\n\r\n", cmd, COMM_INVALID_PARAM);
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_INVALID_PARAM);             // Added by Jason
 					}
 				    ble_response = true;
@@ -2095,10 +2115,8 @@ static int data_report_execute_00(char* buf, int size)
 //extern void bpt_init(void);
 void stop_00(void)
 {
-	//stop_emul_mfio_event();
-
 	ss_disable_irq();
-	printLog("\r\n Data_report_mode = %d, MAX30101:Line=%d\r\n", data_report_mode, __LINE__);           // Modified by Jason
+  //printLog("\r\nData_report_mode = %d, MAX30101:Line=%d\r\n", data_report_mode, __LINE__);           // Modified by Jason
 	sample_count = 0;
 
 #ifdef ENABLE_SS_MAX30101
@@ -2116,17 +2134,22 @@ void stop_00(void)
 
 #ifdef ENABLE_WHRM_AND_SP02
     if(data_report_mode == read_ppg_9)
+    {
     	disable_algo(SS_ALGOIDX_WHRM_WSPO2_SUITE);
-    queue_reset(&whrm_wspo2_suite_queue);
-
-    memset( whrm_wspo2_suite_queue.base, 0, whrm_wspo2_suite_queue.buffer_size);
+    	queue_reset(&whrm_wspo2_suite_queue);
+    	memset( whrm_wspo2_suite_queue.base, 0, whrm_wspo2_suite_queue.buffer_size);
+    	printLog("\r\nALGO WHRM_WSPO2 Disabled, Data_report_mode=%d, MAX30101:Line=%d\r\n", data_report_mode, __LINE__);           // Modified by Jason
+    }
 #endif
 #ifdef ENABLE_BPT
     if((data_report_mode == read_bpt_0)||(data_report_mode == read_bpt_1))
+    {
     	disable_algo(SS_ALGOIDX_BPT);
-    queue_reset(&bpt_queue);
-    /*__DEBUG*/
-    memset( bpt_queue.base, 0, bpt_queue.buffer_size);
+    	queue_reset(&bpt_queue);
+    	/*__DEBUG*/
+    	memset( bpt_queue.base, 0, bpt_queue.buffer_size);
+    	printLog("\r\nALGO BPT Disabled, Data_report_mode=%d, MAX30101:Line=%d\r\n", data_report_mode, __LINE__);                  // Modified by Jason
+    }
 
     BLE_reset_queue();
 

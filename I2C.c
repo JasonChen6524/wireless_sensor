@@ -56,9 +56,10 @@ void sensor_reset(void)
 }
 
 
+U8 state = S0;
 void I2C_Sensors(void)
 {
-   static U8 state = S0;
+   //static U8 state = S0;
    static U8 count = 0;
    
    switch(state)
@@ -96,6 +97,9 @@ void I2C_Sensors(void)
          bpt_main_reset();
          v3status.conn &= ~v3PINSBIO;  // clear bio status bit - Clear = present
          state = S5;
+
+         appState  = ST_COMMAND_MODE;
+
       break;
 
 
@@ -125,6 +129,12 @@ void I2C_Sensors(void)
 
    }
    
+}
+
+void bpt_reset(void)
+{
+    if (!sineactive) ExpSetPins(EN5V_LOW|RESET_LOW|MFIO_HIGH);  //disable 5V
+    state = S6;  // wait to retry
 }
 
 
