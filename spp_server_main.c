@@ -170,7 +170,7 @@ int BLE_AddtoQueue(uint8_t *data_transfer, int32_t buf_size, int32_t data_size, 
 
 	int ret = 0;
 	ds_pkt_bpt_data *pkt = (ds_pkt_bpt_data *)data_transfer;
-	//printf("size is: %d\r\n", size);
+	// printf("size is: %d\r\n", size);
 	// TODO: Append a known character to the byte array in case size is
 	// less than 20 bytes
 	while ((data_size % BLE_NOTIFY_CHAR_ARR_SIZE) && data_size < buf_size)
@@ -232,7 +232,8 @@ void send_spp_msg()
 		} while(result == bg_err_out_of_memory);
 
 		if (result != 0) {
-			printLog("Unexpected error: %x, %s:%d\r\n", result, __func__, __LINE__);
+			//printLog("Unexpected error: %x, %s:%d\r\n", result, __func__, __LINE__);
+			printLog("Unexpected error: %x, Line:%d\r\n", result, __LINE__);
 		} else {
 			_sCounters.num_pack_sent++;
 			_sCounters.num_bytes_sent += len;
@@ -460,13 +461,13 @@ U8 sectic = TIC_TIMER_PERSEC;
    {
        if(evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_configRWChar)
        {
-    	   int len;
+    	   int x, len;
 
     	   len = evt->data.evt_gatt_server_attribute_value.value.len;
     	   printBleDebug("gattdb_configRWChar: 0x%x, line:%d\r\n", evt->data.evt_gatt_server_attribute_value.value.data[0], __LINE__);
 
-    	   printBleDebug("BLE_I[Line:%d]: data RECV: len=%d, data-->", __LINE__, len);
-    	   for(int x=0; x < len; x++)
+    	   printBleDebug("BLE_I[Line:%d]: data RECV: len=%d, data-->\r\n", __LINE__, len);
+    	   for(x=0; x < len; x++)
     	   {
     		 //if ((BLE_DS_INTERFACE != NULL) && (params->data[x] != 0))
     		   if (evt->data.evt_gatt_server_attribute_value.value.data[x] != 0)
@@ -480,10 +481,10 @@ U8 sectic = TIC_TIMER_PERSEC;
     		   //else
     		   //    printf("%x", params->data[x]);
     	   }
-    	   //printf("\n\r");                                                          // Commented by Jason
+    	   //printf("\n\r");                                                            // Commented by Jason
     	   //for(x=0; x < len; x++)                                                     // Added by Jason
     	   //{
-    	   //  printf("%c", evt->data.evt_gatt_server_attribute_value.value.data[x]); // Added by Jason
+    	   //  printf("%c", evt->data.evt_gatt_server_attribute_value.value.data[x]);   // Added by Jason
     	   //}                                                                          // Added by Jason
     	   //printf("\n\r");                                                            // Added by Jason
        }

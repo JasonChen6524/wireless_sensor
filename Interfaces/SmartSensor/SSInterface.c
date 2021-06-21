@@ -1203,8 +1203,7 @@ void ss_execute_once(void){
 			if (data_type == SS_DATATYPE_ALGO || data_type == SS_DATATYPE_BOTH) {
 				for (int i = 0; i < SS_MAX_SUPPORTED_ALGO_NUM; i++) {
 					if (algo_enabled_mode[i]) {
-						assert_msg(algo_data_reqs[i], 
-								"no ss_data_req found for enabled algo");
+						assert_msg(algo_data_reqs[i], 	"no ss_data_req found for enabled algo");
 						algo_data_reqs[i]->rx_data_parser(data_ptr);
 						data_ptr += algo_data_reqs[i]->data_size;
 					}
