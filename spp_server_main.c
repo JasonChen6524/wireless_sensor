@@ -393,7 +393,8 @@ U8 sectic = TIC_TIMER_PERSEC;
           //SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
         }
 #if HR_SPO2_HRV
-        NVIC_SystemReset();
+        //NVIC_SystemReset();
+        gecko_cmd_system_reset(0);
 #endif
          /* Restart advertising */
          //gecko_cmd_le_gap_start_advertising(0, le_gap_general_discoverable, le_gap_undirected_connectable);

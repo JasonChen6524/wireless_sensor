@@ -49,6 +49,11 @@ function will populate v3status.conn v3PINSBIO bitfield
 
 void sensor_reset(void)
 {
+   ExpSetPins(EN5V_LOW|RESET_HIGH|MFIO_HIGH);
+   wait_ms(1000);
+   ExpSetPins(EN5V_HIGH|RESET_HIGH|MFIO_HIGH);
+   wait_ms(5000);
+
    ExpSetPins(EN5V_HIGH|RESET_LOW|MFIO_HIGH);
    wait_ms(500);
    ExpSetPins(EN5V_HIGH|RESET_HIGH|MFIO_HIGH);
@@ -56,39 +61,39 @@ void sensor_reset(void)
 }
 
 
-U8 state = S0;
+U8 I2C_state = S0;
 void I2C_Sensors(void)
 {
    //static U8 state = S0;
    static U8 count = 0;
    
-   switch(state)
+   switch(I2C_state)
    {
       case S0: // entered from reset 
          ExpSetPins(EN5V_HIGH|RESET_LOW|MFIO_HIGH);  //disable 5V      
-         state = S1;
+         I2C_state = S1;
          initI2S(1);
       break;
 
      
       case S1:  // assume one tick time for temp sensor init
             count = 0;
-            state = S3;
+            I2C_state = S3;
             if (SensorUnplug(MAX30208A_ADR))  // sensor present?
             {
-               state = S2;  // sensor not seen
+            	I2C_state = S2;  // sensor not seen
                v3status.conn |= v3PINSBIO;  // set bio status bit - SET = disconnect
-               if (sineactive) state = S6;  // Leave 5V enabled, but bio not present
+               if (sineactive) I2C_state = S6;  // Leave 5V enabled, but bio not present
             }
       break;
       
       case S2:
          ExpSetPins(EN5V_LOW|RESET_LOW|MFIO_HIGH);  //disable 5V
-         state = S5;  // wait to retry
+         I2C_state = S5;  // wait to retry
       break;
 
       case S3:  //Delay to allow biosensor to init, assume one tick
-         state = S4;
+    	  I2C_state = S4;
          ExpSetPins(EN5V_HIGH|RESET_HIGH|MFIO_HIGH);  //enable 5V, remove reset
       break;
 
@@ -96,7 +101,7 @@ void I2C_Sensors(void)
       // init biosensor
          bpt_main_reset();
          v3status.conn &= ~v3PINSBIO;  // clear bio status bit - Clear = present
-         state = S5;
+         I2C_state = S5;
 
          appState  = ST_COMMAND_MODE;
 
@@ -112,7 +117,7 @@ void I2C_Sensors(void)
             {
                v3status.conn |= v3PINSBIO;  // set bio status bit - SET = disconnect              
                if (!sineactive) ExpSetPins(EN5V_LOW|RESET_LOW|MFIO_HIGH);  //disable 5V
-               state = S6;  // wait to retry
+               I2C_state = S6;  // wait to retry
             } 
          }
       break;
@@ -123,7 +128,7 @@ void I2C_Sensors(void)
          {
             ExpSetPins(EN5V_HIGH|RESET_LOW|MFIO_HIGH);  //enable 5V, pull reset
             initI2S(1);  // Re set up the codec
-            state = S1;  // go to check temp sensor present
+            I2C_state = S1;  // go to check temp sensor present
          }
       break;
 
@@ -133,8 +138,8 @@ void I2C_Sensors(void)
 
 void bpt_reset(void)
 {
-    if (!sineactive) ExpSetPins(EN5V_LOW|RESET_LOW|MFIO_HIGH);  //disable 5V
-    state = S6;  // wait to retry
+    ExpSetPins(EN5V_LOW|RESET_LOW|MFIO_HIGH);                                                //disable 5V
+    I2C_state = S6;  // wait to retry
 }
 
 

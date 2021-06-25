@@ -343,7 +343,7 @@ typedef union {
 
 void ss_init_hwcomm_interface(void);
 
-void ss_clear_mfio_event_flag(void);
+void ss_clear_interrupt_flag(void);
 
 
 /**

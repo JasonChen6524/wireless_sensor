@@ -74,7 +74,7 @@ void wait_ms(uint16_t wait_ms)
 	}
 }
 
-void ss_clear_mfio_event_flag(void){
+void ss_clear_interrupt_flag(void){
 	m_irq_received_ = false;
 }
 
@@ -307,7 +307,7 @@ static void mfioGPIOSetup(void)
   NVIC_EnableIRQ(GPIO_EVEN_IRQn);
   NVIC_DisableIRQ(GPIO_EVEN_IRQn);
 #else
-  /* Configure Button PB1 as input and enable interrupt */
+  /* Configure Button PC5 as input and enable interrupt */
   GPIO_PinModeSet(BSP_GPIO_PC5_PORT, BSP_GPIO_PC5_PIN, gpioModeInputPull, 1);
   GPIO_ExtIntConfig(BSP_GPIO_PC5_PORT,
                     BSP_GPIO_PC5_PIN,
@@ -792,12 +792,16 @@ SS_STATUS enable_sensor(int idx, int mode, ss_data_req *data_req)
 
 	uint8_t cmd_bytes[] = { SS_FAM_W_SENSORMODE, (uint8_t)idx, (uint8_t)mode };
 
-	SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, 5 * SS_ENABLE_SENSOR_SLEEP_MS);
-
+  //SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, 5 * SS_ENABLE_SENSOR_SLEEP_MS);
+	SS_STATUS status = write_cmd(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 5 * SS_ENABLE_SENSOR_SLEEP_MS);
 	if (status == SS_SUCCESS) {
 		sensor_enabled_mode[idx] = mode;
 		sensor_data_reqs[idx] = data_req;
 	}
+	else{
+		printLog("Sensor Enable Error:%s, line:%d", (idx==3)?"MAX30101":"ACCEL", __LINE__);
+	}
+
 	return status;
 }
 
@@ -806,13 +810,13 @@ SS_STATUS disable_sensor(int idx)
 	assert_msg((idx <= SS_MAX_SUPPORTED_SENSOR_NUM), "idx must be < SS_MAX_SUPPORTED_SENSOR_NUM, or update code to handle variable length idx values");
 	uint8_t cmd_bytes[] = { SS_FAM_W_SENSORMODE, (uint8_t)idx, 0 };
 
-	SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, SS_ENABLE_SENSOR_SLEEP_MS);
-
+  //SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, SS_ENABLE_SENSOR_SLEEP_MS);
+    SS_STATUS status = write_cmd(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 2 * SS_ENABLE_SENSOR_SLEEP_MS);                                // Modified by Jason
 	if (status == SS_SUCCESS) {
 		sensor_enabled_mode[idx] = 0;
 		sensor_data_reqs[idx] = 0;
+	}else{ printLog("Sensor Disable Error:%s, line:%d", (idx==SS_SENSORIDX_MAX30101)?"MAX30101":"ACCEL", __LINE__);
 	}
-
 	return status;
 }
 
@@ -824,11 +828,14 @@ SS_STATUS enable_algo(int idx, int mode, ss_data_req *data_req)
 
 	uint8_t cmd_bytes[] = { SS_FAM_W_ALGOMODE, (uint8_t)idx, (uint8_t)mode };
 
-	SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, 25 * SS_ENABLE_SENSOR_SLEEP_MS);
-
+  //SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, 25 * SS_ENABLE_SENSOR_SLEEP_MS);
+	SS_STATUS status = write_cmd(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 25 * SS_ENABLE_SENSOR_SLEEP_MS);
 	if (status == SS_SUCCESS) {
 		algo_enabled_mode[idx] = mode;
 		algo_data_reqs[idx] = data_req;
+	}
+	else{
+		printLog("Algo Enable Error:%s, line:%d", (idx==SS_ALGOIDX_BPT)?"BPT":"Other", __LINE__);
 	}
 
 	return status;
@@ -839,11 +846,14 @@ SS_STATUS disable_algo(int idx)
 	assert_msg((idx <= SS_MAX_SUPPORTED_ALGO_NUM), "idx must be < SS_MAX_SUPPORTED_ALGO_NUM, or update code to handle variable length idx values");
 	uint8_t cmd_bytes[] = { SS_FAM_W_ALGOMODE, (uint8_t)idx, 0 };
 
-	SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, SS_ENABLE_SENSOR_SLEEP_MS);
-
+  //SS_STATUS status = write_cmd2(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), 0, 0, SS_ENABLE_SENSOR_SLEEP_MS);
+	SS_STATUS status = write_cmd(&cmd_bytes[0], ARRAY_SIZE(cmd_bytes), SS_ENABLE_SENSOR_SLEEP_MS);
 	if (status == SS_SUCCESS) {
 		algo_enabled_mode[idx] = 0;
 		algo_data_reqs[idx] = 0;
+	}
+	else{
+		printLog("Algo Disable Error:%s, line:%d", (idx==SS_ALGOIDX_BPT)?"BPT":"Other", __LINE__);
 	}
 
 	return status;
@@ -1219,10 +1229,6 @@ void ss_execute_once(void){
     }
 	ss_enable_irq();
 	//irq_evt.stop();
-}
-
-void ss_clear_interrupt_flag(void){
-	m_irq_received_ = false;
 }
 
 void ss_irq_handler_selftest(void){

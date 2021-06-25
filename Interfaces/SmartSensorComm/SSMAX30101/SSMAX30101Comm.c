@@ -1590,8 +1590,8 @@ static uint8_t parse_command_00(const char* cmd)
 					} else{
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 					}
+				    ble_response = true;
 #endif
-				    //ble_response = true;
 				} break;
 				case set_cfg_bpt_nonrest:
 				{
@@ -1624,7 +1624,7 @@ static uint8_t parse_command_00(const char* cmd)
 										   };
 
                     status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_SPO2_COEFS, &CalCoef[0], sizeof(CalCoef));
-#if 1
+#if 0
 					if (status == SS_SUCCESS)
 						printLog("%s err=%d\r\n\r\n", cmd, COMM_SUCCESS);
 					else
@@ -1636,8 +1636,8 @@ static uint8_t parse_command_00(const char* cmd)
 					} else{
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 					}
-#endif
 				    ble_response = true;
+#endif
                 } break;
 
 				case self_test_ppg_os24:
@@ -2159,7 +2159,7 @@ void stop_00(void)
 
     printLog("\r\nAll Queue reset on stop cmd, MAX30101:Line=%d\r\n", __LINE__);           // Modified by Jason
 	ss_clear_interrupt_flag();
-	//ss_enable_irq();
+	ss_enable_irq();
 
 	//cal_index_falg = 0;
 	//index_val      = 0xFF;
@@ -2169,6 +2169,8 @@ void stop_00(void)
 	if(data_report_mode == read_bpt_1)
 	{
 		//NVIC_SystemReset();
+		//sensor_reset();
+		//bpt_reset();
 	}
 	data_report_mode = 0;                                                                   //bpt_init();
 
