@@ -209,7 +209,7 @@ void bpt_init(void)
 	wait_ms(2000);
 	ss_init_hwcomm_interface();
 	ss_disable_irq();
-	ss_clear_mfio_event_flag();
+	ss_clear_interrupt_flag();
 	ss_enable_irq();
 
 	bio_mode = ss_in_bootldr_mode();//sh_checkif_bootldr_mode();
