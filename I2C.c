@@ -186,64 +186,6 @@ U8 ExpSetPins(U8 bits)
    return 0;                                                        //Jason
 }
 
-#if 0
-U8 ExpGetMFIO(void)                                                 //Jason
-{
-U8 var[IO_EXP_CMD_SIZE] = {CMD_GET_MFIO, 0, 0, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return(var[IO_EXP_CMD_SIZE-1]);
-}
-
-U8 ExpSetPins_2(U8 bits)                                            //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_SET, OUTPUT_HIGH, bits, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-
-U8 ExpResetPins_2(U8 bits)                                         //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_SET, OUTPUT_LOW, bits, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-
-U8 ExpSetPinsOutput(U8 bits)                                       //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_SET_DIR, BIT_OUTPUT, bits, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-
-U8 ExpSetPinsInput(U8 bits)                                        //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_SET_DIR, BIT_INPUT, bits, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-
-U8 ExpSetIRQ_Enable(void)                                         //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_IRQ_ENABLE, 0, 0, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-
-U8 ExpSetIRQ_Disable(void)                                        //Jason
-{
- U8 var[IO_EXP_CMD_SIZE] = {CMD_IRQ_DISABLE, 0, 0, 0};
-
-   I2C_CMD_IO(IO_EXP_ADR,var);
-   return 0;
-}
-#endif
-
 void initI2C(void)
 {
 
@@ -328,53 +270,6 @@ I2C_TransferReturn_TypeDef ret;
     }
 
      return ((int) ret);
-}
-
-int m_i2cBus_read(U8 addr, U8 *data, U16 len)   // Added by Jason for Biosensor read
-{
-	I2C_TransferSeq_TypeDef    seq;
-	I2C_TransferReturn_TypeDef ret;
-
-	    seq.addr = addr;
-	    seq.flags = I2C_FLAG_READ;
-
-	    seq.buf[1].len = 0;
-	    seq.buf[1].data = NULL;
-	    seq.buf[0].len = len;
-	    seq.buf[0].data = data;
-
-	    // Do a polled transfer
-	    ret = I2C_TransferInit(I2C0, &seq);
-	    while (ret == i2cTransferInProgress)
-	    {
-	      ret = I2C_Transfer(I2C0);
-	    }
-
-	     return ((int) ret);
-
-}
-
-int m_i2cBus_write(U8 addr, U8 *cmd_bytes, int cmd_bytes_len, bool flag)               // Added by Jason for Biosensor Write
-{
-	I2C_TransferSeq_TypeDef    seq;
-	I2C_TransferReturn_TypeDef ret;
-
-	    seq.addr = addr;
-	    seq.flags = I2C_FLAG_WRITE_WRITE;
-
-	    seq.buf[0].len = cmd_bytes_len;
-	    seq.buf[0].data = cmd_bytes;
-	    seq.buf[1].len = 0;
-	    seq.buf[1].data = NULL;
-
-	    // Do a polled transfer
-	    ret = I2C_TransferInit(I2C0, &seq);
-	    while (ret == i2cTransferInProgress)
-	    {
-	      ret = I2C_Transfer(I2C0);
-	    }
-
-	     return ((int) ret);
 }
 
 int I2C_CMD_IO(U8 addr, U8 *data)

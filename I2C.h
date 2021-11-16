@@ -218,8 +218,8 @@ extern void Temperature_reset(void);                                            
 //extern U8 ExpSetIRQ_Enable(void);                                               //Jason
 //extern U8 ExpSetIRQ_Disable(void);                                              //Jason
 
-extern int m_i2cBus_write(U8 addr, U8 *cmd_bytes, int cmd_bytes_len, bool flag);//Jason
-extern int m_i2cBus_read(U8 addr, U8 *data, U16 len);                           //Jason
+//extern int m_i2cBus_write(U8 addr, U8 *cmd_bytes, int cmd_bytes_len, bool flag);//Jason
+//extern int m_i2cBus_read(U8 addr, U8 *data, U16 len);                           //Jason
 
 //extern const struct rgbcolor led_00[];
 //extern const struct rgbcolor led_10[];

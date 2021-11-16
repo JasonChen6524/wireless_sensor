@@ -33,8 +33,8 @@
 #ifndef __MXM_ASSERT_H__
 #define __MXM_ASSERT_H__
 
+#if 0
 #include "Peripherals.h"
-
 #define mxm_assert(test)	\
 {	\
 	if (!(test)) {	\
@@ -52,5 +52,5 @@
 		while (true) {};	\
 	}	\
 }
-
+#endif
 #endif

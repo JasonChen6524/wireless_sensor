@@ -715,7 +715,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 	</storageModule>
-	<storageModule generalProj.esf.protocolIds="com.silabs.sdk.stack.super:2.7.9._310455041.com.silabs.stack.ble:2.13.9.0_1685155431" generalProj.esf.protocolNames="ble" moduleId="com.silabs.ss.framework.ide.project.core.cpp" project.generation="19" projectCommon.boardIds="com.silabs.board.none:0.0.0" projectCommon.importModeId="LINK_LIBRARIES" projectCommon.partId="mcu.arm.efr32.bg21.bgm210p022jia" projectCommon.sdkId="com.silabs.sdk.stack.super:2.7.3._310455041"/>
+	<storageModule generalProj.esf.protocolIds="com.silabs.sdk.stack.super:2.7.9._310455041.com.silabs.stack.ble:2.13.9.0_1685155431" generalProj.esf.protocolNames="ble" moduleId="com.silabs.ss.framework.ide.project.core.cpp" project.generation="31" projectCommon.boardIds="com.silabs.board.none:0.0.0" projectCommon.importModeId="LINK_LIBRARIES" projectCommon.partId="mcu.arm.efr32.bg21.bgm210p022jia" projectCommon.sdkId="com.silabs.sdk.stack.super:2.7.3._310455041"/>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="V3_CUSTOM.com.silabs.ss.framework.ide.project.core.cdt.cdtMbsProjectType.114346679" name="SLS CDT Project" projectType="com.silabs.ss.framework.ide.project.core.cdt.cdtMbsProjectType"/>
 	</storageModule>
@@ -743,16 +743,28 @@
 		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904@1;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904@1.;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.1074217319;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.1505284252">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.533067873;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.956045634">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA.;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.927362356;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.698072818">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.1128641590;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.953184305">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA.;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.274705342;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.400458593">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.2112724237;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.138602102">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.602861755;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.937035391">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.533067873;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.956045634">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.2041188998;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.574378397">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.1458137299;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.1053512598">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904 - BGM210P022JIA.;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.927362356;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.698072818">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904_2;com.silabs.ss.framework.project.toolchain.core.default#com.silabs.ss.tool.ide.arm.toolchain.gnu.cdt:7.2.1.20170904._2;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.base.463342545;com.silabs.ide.si32.gcc.cdt.managedbuild.tool.gnu.c.compiler.input.112898874">

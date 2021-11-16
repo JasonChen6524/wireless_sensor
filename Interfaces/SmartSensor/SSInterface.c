@@ -33,6 +33,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "em_i2c.h"                                            // Added by Jason Chen, 2021.11.15
 #include "hal-config-board.h"
 #include "SSInterface.h"
 #include "Peripherals.h"
@@ -72,6 +73,50 @@ void wait_ms(uint16_t wait_ms)
 		if(diff > delay)
 			return;
 	}
+}
+
+static int m_i2cBus_read(uint8_t addr, uint8_t *data, uint16_t len)   // Added by Jason for Biosensor read
+{
+	I2C_TransferSeq_TypeDef    seq;
+	I2C_TransferReturn_TypeDef ret;
+
+	seq.addr = addr;
+	seq.flags = I2C_FLAG_READ;
+
+	seq.buf[1].len = 0;
+	seq.buf[1].data = NULL;
+	seq.buf[0].len = len;
+	seq.buf[0].data = data;
+
+	// Do a polled transfer
+	ret = I2C_TransferInit(I2C0, &seq);
+	while (ret == i2cTransferInProgress)
+	{
+		ret = I2C_Transfer(I2C0);
+	}
+	return ((int) ret);
+}
+
+static int m_i2cBus_write(uint8_t addr, uint8_t *cmd_bytes, int cmd_bytes_len, bool flag)               // Added by Jason for Biosensor Write
+{
+	I2C_TransferSeq_TypeDef    seq;
+	I2C_TransferReturn_TypeDef ret;
+
+	seq.addr = addr;
+	seq.flags = I2C_FLAG_WRITE_WRITE;
+
+	seq.buf[0].len = cmd_bytes_len;
+	seq.buf[0].data = cmd_bytes;
+	seq.buf[1].len = 0;
+	seq.buf[1].data = NULL;
+
+	// Do a polled transfer
+	ret = I2C_TransferInit(I2C0, &seq);
+	while (ret == i2cTransferInProgress)
+	{
+		ret = I2C_Transfer(I2C0);
+	}
+	return ((int) ret);
 }
 
 void ss_clear_interrupt_flag(void){

@@ -1276,14 +1276,14 @@ static uint8_t parse_command_00(const char* cmd)
 					} else {
 						status = ss_int->disable_algo(SS_ALGOIDX_AGC);
 					}
-#endif
+
 					if (status != SS_SUCCESS) {
 						pr_info("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 						pr_info("FAILED at line %d - agc_enabled: %d\n", __LINE__, agc_enabled);
 						ss_enable_irq();
 						break;
 					}
-
+#endif
 					ss_disable_irq();
 #ifdef ENABLE_SS_MAX30101
 					status = enable_sensor(SS_SENSORIDX_MAX30101, 1, &max30101_mode1_data_req);
@@ -1366,16 +1366,6 @@ static uint8_t parse_command_00(const char* cmd)
 						data_len = snprintf(charbuf, sizeof(charbuf), "\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);                   // Added by Jason
 						ss_enable_irq();
 						break;
-					}
-#endif
-
-#if 0
-					status = enable_sensor(SS_SENSORIDX_ACCEL, 1, &accel_mode1_data_req);                                       // Added by Jason
-					if (status != SS_SUCCESS) {
-						pr_info("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						printLog("FAILED at line %d\n", __LINE__);
-						ss_enable_irq();
-						return -1;
 					}
 #endif
 
