@@ -45,7 +45,8 @@
 #include "em_cmu.h"
 #include "I2C.h"
 
-#define ENABLE_WHRM_AND_SP02
+#define ENABLE_WHRM_AND_SP02x
+#define ENABLE_WHRM_AND_SP02_MODE2
 #define ENABLE_BPT
 
 #define ENABLE_SS_MAX30101
@@ -66,29 +67,33 @@ char charbuf[1792] __attribute__((aligned(4)));
 addr_val_pair reg_vals[64];
 
 struct queue_t max30101_queue;
-uint8_t max30101_queue_buf[128 * sizeof(max30101_mode1_data)];
+uint8_t max30101_queue_buf[8 * sizeof(max30101_mode1_data)];
 
-struct queue_t whrm_queue;
-uint8_t whrm_queue_buf[128 * sizeof(whrm_mode1_data)];
+#ifdef ENABLE_WHRM_AND_SP02
+struct queue_t whrm_queue;                                                                     // Nov18 by Jason chen, 2021.11.18 Don't need it
+uint8_t whrm_queue_buf[8 * sizeof(whrm_mode1_data)];                                           // Nov18 by Jason chen, 2021.11.18 Don't need it
+#endif
 
 struct queue_t accel_queue;
-uint8_t accel_queue_buf[128 * sizeof(accel_mode1_data)];
+uint8_t accel_queue_buf[8 * sizeof(accel_mode1_data)];
 
 struct queue_t bpt_queue;
-uint8_t bpt_queue_buf[128 * sizeof(bpt_mode1_2_data)];
+uint8_t bpt_queue_buf[8 * sizeof(bpt_mode1_2_data)];
 
 struct queue_t whrm_wspo2_suite_queue;
-uint8_t whrm_wspo2_suite_queue_buf[256 * sizeof(whrm_wspo2_suite_modeX_data)];
+uint8_t whrm_wspo2_suite_queue_buf[16 * sizeof(whrm_wspo2_suite_modeX_data)];
 
 ss_data_req accel_mode1_data_req;                                                 // Wellness library report needs it
 ss_data_req max30101_mode1_data_req;                                              // Wellness library report needs it
 ss_data_req whrm_wspo2_suite_mode2_data_req;                                      // for Wellness library report.
 
-ss_data_req whrm_mode1_data_req;
+//ss_data_req whrm_mode1_data_req;
 ss_data_req agc_mode1_data_req;
 ss_data_req bpt_mode1_2_data_req;
 
+#ifdef ENABLE_WHRM_AND_SP02
 ss_data_req whrm_wspo2_suite_mode1_data_req;
+#endif
 
 bool agc_enabled = true;
 
@@ -122,7 +127,7 @@ static const char* const cmd_tbl[] = {
     "read ppg 0",                                     // For MAX32664D, read ppg 0 for Calibration by Jason
     "read ppg 1",                /* Only Algo Mode */ // For MAX32664D, read ppg 1 for measurement by Jason
 	"read ppg 4",
-	"read ppg 9",
+	"read ppg 9",                                     // For MAX32664A, read ppg 9 for HRV measurement by Jason, 2021.11.18
     "read bpt 0",
     "read bpt 1",
 	"get_reg ppg",
@@ -157,8 +162,7 @@ void accel_data_rx(uint8_t* data_ptr)                                           
 	sample.y = (data_ptr[2] << 8) | data_ptr[3];
 	sample.z = (data_ptr[4] << 8) | data_ptr[5];
 
-	//printf("accX= %d , accY=%d, accZ=%d  \r\n", sample.x, sample.y , sample.z);                                 // Commented by Jason
-
+	pr_info("[accel_queue]\r\n");//:accX= %d , accY=%d, accZ=%d  \r\n", sample.x, sample.y , sample.z);                                 // Commented by Jason
 	enqueue(&accel_queue, &sample);
 }
 
@@ -170,8 +174,7 @@ void max30101_data_rx(uint8_t* data_ptr)                                        
 	sample.led3 = (data_ptr[6] << 16) | (data_ptr[7] << 8) | data_ptr[8];
 	sample.led4 = (data_ptr[9] << 16) | (data_ptr[10] << 8) | data_ptr[11];
 
-	//pr_info("led1=%.6X led2=%.6X led3=%.6X led4=%.6X\r\n", sample.led1, sample.led2, sample.led3, sample.led4);            // Commented by Jason
-
+	pr_info("[max30101_queue]\r\n");//:led1=%8x led2=%8x led3=%8x led4=%8x\r\n", (unsigned int)sample.led1, (unsigned int)sample.led2, (unsigned int)sample.led3, (unsigned int)sample.led4);            // Commented by Jason
 	enqueue(&max30101_queue, &sample);
 }
 
@@ -262,10 +265,11 @@ void bpt_data_rx(uint8_t* data_ptr)
     uint16_t spo21 = sample.spo2/10;
     uint16_t spo22 = sample.spo2 - spo21 * 10;
 
-	printLog("[MAX30101:%d] status=%d prog=%d hr=%d spo2=%d.%d sys=%d dia=%d ibi=%d\r\n", __LINE__, sample.status, sample.prog, hr21, spo21, spo22, sample.sys_bp, sample.dia_bp, sample.ibi);
+	printLog("[bpt_queue]:%d] status=%d prog=%d hr=%d spo2=%d.%d sys=%d dia=%d ibi=%d\r\n", __LINE__, sample.status, sample.prog, hr21, spo21, spo22, sample.sys_bp, sample.dia_bp, sample.ibi);
 #endif
 }
 
+#ifdef ENABLE_WHRM_AND_SP02                                          // Nov18 by Jason chen, 2021.11.18 Don't need it
 void whrm_data_rx(uint8_t* data_ptr)
 {
 	//See API doc for data format
@@ -275,9 +279,10 @@ void whrm_data_rx(uint8_t* data_ptr)
 	sample.spo2    = (data_ptr[3] << 8) | data_ptr[4];
 	sample.status  = data_ptr[5];
 
-	pr_info("hr=%.1f conf=%d spo2=%d status=%d\r\n", (float)sample.hr / 10.0, sample.hr_conf, sample.spo2, sample.status);
+	printLog("[whrm_queue]\r\n");//:hr=%.1f conf=%d spo2=%d status=%d\r\n", (float)sample.hr / 10.0, sample.hr_conf, sample.spo2, sample.status);
 	enqueue(&whrm_queue, &sample);
 }
+#endif
 
 void agc_data_rx(uint8_t* data_ptr)
 {
@@ -325,7 +330,7 @@ static void        stop_00(void);
 static uint8_t     parse_command_00(const char* cmd);
 static int         data_report_execute_00(char* buf, int size);
 
-void set_sensorhub_accel_tt(void);
+//void set_sensorhub_accel_tt(void);
 
 
 void SSMAX30101Comm_init(void)
@@ -355,13 +360,13 @@ void SSMAX30101Comm_init(void)
 
 	whrm_wspo2_suite_mode2_data_req.data_size = SSWHRM_WSPO2_SUITE_MODE2_DATASIZE;
 	whrm_wspo2_suite_mode2_data_req.rx_data_parser = (rx_data_callback)&whrm_wspo2_suite_data_rx_mode2;            // for wellness library API report by Jason
-
-	whrm_mode1_data_req.data_size = SSWHRM_MODE1_DATASIZE;
-	whrm_mode1_data_req.rx_data_parser = (rx_data_callback)&whrm_data_rx;
+#ifdef ENABLE_WHRM_AND_SP02
+	whrm_mode1_data_req.data_size = SSWHRM_MODE1_DATASIZE;                                                       // Nov18 by Jason chen, 2021.11.18 Don't need it
+	whrm_mode1_data_req.rx_data_parser = (rx_data_callback)&whrm_data_rx;                                        // Nov18 by Jason chen, 2021.11.18 Don't need it
 
 	whrm_wspo2_suite_mode1_data_req.data_size = SSWHRM_WSPO2_SUITE_MODE1_DATASIZE;
 	whrm_wspo2_suite_mode1_data_req.rx_data_parser = (rx_data_callback)&whrm_wspo2_suite_data_rx_mode1;
-
+#endif
 	agc_mode1_data_req.data_size = SSAGC_MODE1_DATASIZE;
 	agc_mode1_data_req.rx_data_parser = (rx_data_callback)&agc_data_rx;
 
@@ -369,7 +374,9 @@ void SSMAX30101Comm_init(void)
 	bpt_mode1_2_data_req.rx_data_parser = (rx_data_callback)&bpt_data_rx;
 
 	queue_init(&max30101_queue, max30101_queue_buf, sizeof(max30101_mode1_data), sizeof(max30101_queue_buf));
-	queue_init(&whrm_queue, whrm_queue_buf, sizeof(whrm_mode1_data), sizeof(whrm_queue_buf));
+#ifdef ENABLE_WHRM_AND_SP02
+	queue_init(&whrm_queue, whrm_queue_buf, sizeof(whrm_mode1_data), sizeof(whrm_queue_buf));                                                  // Nov18 by Jason chen, 2021.11.18 Don't need it
+#endif
 	queue_init(&accel_queue, accel_queue_buf, sizeof(accel_mode1_data), sizeof(accel_queue_buf));
 	queue_init(&bpt_queue, bpt_queue_buf, sizeof(bpt_mode1_2_data), sizeof(bpt_queue_buf));
 
@@ -531,7 +538,7 @@ int read_ppg_mode_9(const char* cmd){
 
 #endif
 
-#ifdef ENABLE_WHRM_AND_SP02
+#ifdef ENABLE_WHRM_AND_SP02_MODE2
 
 	status = enable_algo(SS_ALGOIDX_WHRM_WSPO2_SUITE, 2, &whrm_wspo2_suite_mode2_data_req);//cmd: 0x52,07,02, mode 2 for HR,SPO2, RR ....Reading for Wellness library report by Jason
 	if (status != SS_SUCCESS) {
@@ -1872,7 +1879,7 @@ static int data_report_execute_00(char* buf, int size)
 				&& queue_len(&accel_queue) > 0
 #endif
 #ifdef ENABLE_WHRM_AND_SP02
-				&& queue_len(&whrm_queue) > 0
+				&& queue_len(&whrm_queue) > 0                                    // Nov18 by Jason chen, 2021.11.18 Don't need it
 #endif
 				)
 			{
@@ -1883,7 +1890,7 @@ static int data_report_execute_00(char* buf, int size)
 				dequeue(&accel_queue, &accel_sample);
 #endif
 #ifdef ENABLE_WHRM_AND_SP02
-				dequeue(&whrm_queue, &whrm_sample);
+				dequeue(&whrm_queue, &whrm_sample);                              // Nov18 by Jason chen, 2021.11.18 Don't need it
 #endif
 
 #ifdef ASCII_COMM
@@ -1934,12 +1941,12 @@ static int data_report_execute_00(char* buf, int size)
 			if (1
 
 #ifdef ENABLE_WHRM_AND_SP02
-				&& queue_len(&whrm_queue) > 0
+				&& queue_len(&whrm_queue) > 0                                            // Nov18 by Jason chen, 2021.11.18 Don't need it
 #endif
 				)
 			{
 #ifdef ENABLE_WHRM_AND_SP02
-				dequeue(&whrm_queue, &whrm_sample);
+				dequeue(&whrm_queue, &whrm_sample);                                      // Nov18 by Jason chen, 2021.11.18 Don't need it
 #endif
 
 #ifdef ASCII_COMM
@@ -2123,7 +2130,7 @@ void stop_00(void)
     memset( accel_queue.base, 0, accel_queue.buffer_size);
 #endif
 
-#ifdef ENABLE_WHRM_AND_SP02
+#ifdef ENABLE_WHRM_AND_SP02_MODE2
     if(data_report_mode == read_ppg_9)
     {
     	disable_algo(SS_ALGOIDX_WHRM_WSPO2_SUITE);
