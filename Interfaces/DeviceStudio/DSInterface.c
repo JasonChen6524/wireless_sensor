@@ -56,7 +56,6 @@ const char* platform_name;
 const char* firmware_version;
 
 #define CONSOLE_STR_BUF_SZ                    (2048)
-
 char cmd_str[CONSOLE_STR_BUF_SZ];
 
 int cmd_idx;
@@ -98,6 +97,20 @@ void SensorComm_create(void)
 		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssMAX30101.data_report_execute;
 
 	i = 1;
+		sensor_list_t[i].get_type                  = (get_type_callback)ssGenericCmd.get_type;
+		sensor_list_t[i].is_visible                = (is_visible_callback)ssGenericCmd.is_visible;
+	  //sensor_list_t[i].is_enable                 = (is_enable_callback)&is_enabled_t;
+	  //sensor_list_t[i].get_part_info             = (get_part_info_callback)ssGenericCmd.get_part_info;
+	  //sensor_list_t[i].SensorComm_Set_Ble_Status = (SensorComm_Set_Ble_Status_callback)&SensorComm_Set_Ble_Status_t;
+
+	  //sensor_list_t[i].get_part_name             = (get_part_name_callback)&get_part_name_t;
+	  //sensor_list_t[i].get_algo_ver              = (get_algo_ver_callback)&get_algo_ver_t;
+		sensor_list_t[i].stop                      = (stop_callback)ssGenericCmd.stop;
+		sensor_list_t[i].parse_command             = (parse_command_callback)ssGenericCmd.parse_command;
+	  //sensor_list_t[i].data_report_execute       = (data_report_execute_callback)&data_report_execute_t;
+		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssGenericCmd.data_report_execute;
+
+	i = 2;
 		sensor_list_t[i].get_type                  = (get_type_callback)ssBoot.get_type;
 		sensor_list_t[i].is_visible                = (is_visible_callback)ssBoot.is_visible;
 	  //sensor_list_t[i].is_enable                 = (is_enable_callback)ssBoot&is_enabled_t;
@@ -106,24 +119,11 @@ void SensorComm_create(void)
 
 	  //sensor_list_t[i].get_part_name             = (get_part_name_callback)&get_part_name_t;
 	  //sensor_list_t[i].get_algo_ver              = (get_algo_ver_callback)&get_algo_ver_t;
-	    sensor_list_t[i].stop                      = (stop_callback)ssBoot.stop;
-	    sensor_list_t[i].parse_command             = (parse_command_callback)ssBoot.parse_command;
+		sensor_list_t[i].stop                      = (stop_callback)ssBoot.stop;
+		sensor_list_t[i].parse_command             = (parse_command_callback)ssBoot.parse_command;
 	  //sensor_list_t[i].data_report_execute       = (data_report_execute_callback)&data_report_execute_t;
-	    sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssBoot.data_report_execute;
+		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssBoot.data_report_execute;
 
-	i = 2;
-		sensor_list_t[i].get_type                  = (get_type_callback)ssGenericCmd.get_type;
-		sensor_list_t[i].is_visible                = (is_visible_callback)ssGenericCmd.is_visible;
-	  //sensor_list_t[i].is_enable                 = (is_enable_callback)&is_enabled_t;
-	  //sensor_list_t[i].get_part_info             = (get_part_info_callback)ssGenericCmd.get_part_info;
-      //sensor_list_t[i].SensorComm_Set_Ble_Status = (SensorComm_Set_Ble_Status_callback)&SensorComm_Set_Ble_Status_t;
-
-	  //sensor_list_t[i].get_part_name             = (get_part_name_callback)&get_part_name_t;
-	  //sensor_list_t[i].get_algo_ver              = (get_algo_ver_callback)&get_algo_ver_t;
-	    sensor_list_t[i].stop                      = (stop_callback)ssGenericCmd.stop;
-		sensor_list_t[i].parse_command             = (parse_command_callback)ssGenericCmd.parse_command;
-	  //sensor_list_t[i].data_report_execute       = (data_report_execute_callback)&data_report_execute_t;
-		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssGenericCmd.data_report_execute;
 
 	num_sensors = i + 1;
 }

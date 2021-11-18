@@ -100,7 +100,7 @@ int parse_cmd_data32(const char* str, const char* cmd, uint32_t *vals, int vals_
  */
 bool starts_with(const char* str1, const char* str2);
 
-#define MAX_BLE_QUEUE (128+16)
+#define MAX_BLE_QUEUE 16//(128+16)
 #define BLE_NOTIFY_CHAR_ARR_SIZE    ((int)60)  /*JUST FOR MPOC TESTING!!! MAKE IT as 20 bytes*/
 
 #endif
