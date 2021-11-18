@@ -43,7 +43,8 @@
 #include "CRC8.h"
 
 static const char* cmdStr;
-static char charbuf[1024];
+//static char charbuf[1512];//024];
+extern char charbuf[1792];
 static int ridx;
 static int data_len;
 static uint8_t cmd_index;

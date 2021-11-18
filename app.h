@@ -95,7 +95,7 @@ typedef struct
 	SensorComm_Set_Ble_Status_callback SensorComm_Set_Ble_Status;
 } SensorComm;
 
-#define DS_MAX_NUM_SENSORCOMMS	3
+#define DS_MAX_NUM_SENSORCOMMS	2                                      // Nov18, by Jason
 
 /* Main application */
 void appMain(gecko_configuration_t *pconfig);

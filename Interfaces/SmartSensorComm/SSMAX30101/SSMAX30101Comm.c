@@ -59,9 +59,10 @@ int sample_count;
 #define bptFifoThreh               1
 
 //char cal_buf[1720];
-char cal_buf[1792] __attribute__((aligned(4)));
+char charbuf[1792] __attribute__((aligned(4)));
 
-char charbuf[1792];//824];//[512];
+//char cal_buf[1792];//824];//[512];cal_buf
+
 addr_val_pair reg_vals[64];
 
 struct queue_t max30101_queue;
@@ -1522,7 +1523,7 @@ static uint8_t parse_command_00(const char* cmd)
 					char cal_str[2*(sizeof(cal_result)-1)+1];
 					int ii,str_idx = 0;
 
-					data_report_mode = get_cfg_bpt_cal_data;
+					data_report_mode = 0;//get_cfg_bpt_cal_data;                                                           // Nov18 by Jason Chen, 2021.11.18
 
 					status = get_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_result[0], sizeof(cal_result));
                      if (status != SS_SUCCESS) {
@@ -1545,7 +1546,7 @@ static uint8_t parse_command_00(const char* cmd)
 //					str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "00");
 					//printLog("\r\n%s value=%s err=%d, %d\r\n", cmd, cal_str, COMM_SUCCESS, sizeof(cal_result));
                     //data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
-					snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
+					//snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);             // Nov18 by Jason Chen, 2021.11.18
 					//printLog("%s\r\n", cal_str);
 
 					//ble_response = true;
@@ -1684,7 +1685,7 @@ static uint8_t parse_command_00(const char* cmd)
 					int k = i;
 					//static bool cal_data_flag = false;
 
-					memset(cal_buf, 0, sizeof(cal_buf));
+					//memset(cal_buf, 0, sizeof(cal_buf));                                          // Nov18 by Jason Chen, 2021.11.18
 					data_report_mode = 0;//set_cfg_bpt_cal_data;
 
 					//printLog(" \r\n __DEBUG Cal cmd pulled=");
@@ -1697,7 +1698,7 @@ static uint8_t parse_command_00(const char* cmd)
 					snprintf(charbuf,sizeof(charbuf),"%s\r\n", cmd);
 					charbuf[77] = '\0';
 					if (ret) {
-						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);
+						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);                  // Nov18 by Jason Chen, 2021.11.18
 						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_INVALID_PARAM, __LINE__);
 						break;
 					}
@@ -1731,12 +1732,12 @@ static uint8_t parse_command_00(const char* cmd)
 #else
 					if (status == SS_SUCCESS)
 					{
-						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);
+						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);                 // Nov18 by Jason Chen, 2021.11.18
 						printLog("%s.... err=%d\r\n\r\n", charbuf, COMM_SUCCESS);
 					}
 					else
 					{
-						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);            // Nov18 by Jason Chen, 2021.11.18
 						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_GENERAL_ERROR, __LINE__);
 					}
 
@@ -2076,15 +2077,15 @@ static int data_report_execute_00(char* buf, int size)
 
 		case get_cfg_bpt_cal_data:
 		{
-			sprintf(buf, "%s", cal_buf);
-			data_len = strlen(cal_buf);
+			//sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
+			//data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
 			data_report_mode = 0;
 		}break;
 
 		case set_cfg_bpt_cal_data:
 		{
-			sprintf(buf, "%s", cal_buf);
-			data_len = strlen(cal_buf);
+			//sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
+			//data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
 			data_report_mode = 0;
 		}break;
 

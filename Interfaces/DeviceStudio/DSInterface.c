@@ -16,7 +16,7 @@
 #include "sl_sleeptimer.h"
 
 #include "SSMAX30101Comm.h"
-#include "SSBootloaderComm.h"
+//#include "SSBootloaderComm.h"
 #include "SSGenericCmd.h"
 #include "utils.h"
 
@@ -80,8 +80,9 @@ void DSInterface_init(void)
 
 void SensorComm_create(void)
 {
+	DSInterface_init();
 	SSMAX30101Comm_init();
-	SSBootloaderComm_init();
+	//SSBootloaderComm_init();
 	SSGenericCmd_int();
 	int i = 0;
 		sensor_list_t[i].get_type                  = (get_type_callback)ssMAX30101.get_type;
@@ -109,22 +110,6 @@ void SensorComm_create(void)
 		sensor_list_t[i].parse_command             = (parse_command_callback)ssGenericCmd.parse_command;
 	  //sensor_list_t[i].data_report_execute       = (data_report_execute_callback)&data_report_execute_t;
 		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssGenericCmd.data_report_execute;
-
-	i = 2;
-		sensor_list_t[i].get_type                  = (get_type_callback)ssBoot.get_type;
-		sensor_list_t[i].is_visible                = (is_visible_callback)ssBoot.is_visible;
-	  //sensor_list_t[i].is_enable                 = (is_enable_callback)ssBoot&is_enabled_t;
-	  //sensor_list_t[i].get_part_info             = (get_part_info_callback)&get_part_info_t;
-	  //sensor_list_t[i].SensorComm_Set_Ble_Status = (SensorComm_Set_Ble_Status_callback)&SensorComm_Set_Ble_Status_t;
-
-	  //sensor_list_t[i].get_part_name             = (get_part_name_callback)&get_part_name_t;
-	  //sensor_list_t[i].get_algo_ver              = (get_algo_ver_callback)&get_algo_ver_t;
-		sensor_list_t[i].stop                      = (stop_callback)ssBoot.stop;
-		sensor_list_t[i].parse_command             = (parse_command_callback)ssBoot.parse_command;
-	  //sensor_list_t[i].data_report_execute       = (data_report_execute_callback)&data_report_execute_t;
-		sensor_list_t[i].data_report_execute       = (data_report_execute_callback)ssBoot.data_report_execute;
-
-
 	num_sensors = i + 1;
 }
 
