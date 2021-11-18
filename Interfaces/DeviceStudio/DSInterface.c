@@ -12,7 +12,7 @@
 #include "Peripherals.h"
 #include "DSInterface.h"
 #include "assert.h"
-#include "spp_utils.h"
+//#include "spp_utils.h"
 #include "sl_sleeptimer.h"
 
 #include "SSMAX30101Comm.h"

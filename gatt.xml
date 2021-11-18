@@ -6,8 +6,8 @@
   <service advertise="false" name="Generic Access" requirement="mandatory" sourceId="org.bluetooth.service.generic_access" type="primary" uuid="1800">
     <informativeText>Abstract: The generic_access service contains generic information about the device. All available Characteristics are readonly. </informativeText>
     
-    <!--Device Name-->
-    <characteristic id="device_name" name="Device Name" sourceId="org.bluetooth.characteristic.gap.device_name" uuid="2A00">
+    <!--Wireless Sensor-->
+    <characteristic id="device_name" name="Wireless Sensor" sourceId="org.bluetooth.characteristic.gap.device_name" uuid="2A00">
       <informativeText/>
       <value length="25" type="utf-8" variable_length="false">MAX30101_SmartSensor_Host</value>
       <properties read="true" read_requirement="optional" write="true" write_requirement="optional"/>

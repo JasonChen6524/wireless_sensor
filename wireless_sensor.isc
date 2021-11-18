@@ -32,7 +32,7 @@ appPlugin: stack_bridge=false
 <?xml version="1.0" encoding="UTF-8"?><gatt gatt_caching="true" generic_attribute_service="true" header="gatt_db.h" name="Custom BLE GATT" out="gatt_db.c" prefix="gattdb_">
   <service advertise="false" name="Generic Access" requirement="mandatory" sourceId="org.bluetooth.service.generic_access" type="primary" uuid="1800">
     <informativeText>Abstract: The generic_access service contains generic information about the device. All available Characteristics are readonly. </informativeText>
-    <characteristic id="device_name" name="Device Name" sourceId="org.bluetooth.characteristic.gap.device_name" uuid="2A00">
+    <characteristic id="device_name" name="Wireless Sensor" sourceId="org.bluetooth.characteristic.gap.device_name" uuid="2A00">
       <informativeText/>
       <value length="25" type="utf-8" variable_length="false">MAX30101_SmartSensor_Host</value>
       <properties read="true" read_requirement="optional" write="true" write_requirement="optional"/>
