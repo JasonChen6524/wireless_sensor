@@ -55,7 +55,7 @@ volatile uint8_t ds_console_interface_exists_;
 const char* platform_name;
 const char* firmware_version;
 
-#define CONSOLE_STR_BUF_SZ                    (2048)
+#define CONSOLE_STR_BUF_SZ                    (1024+64)//(2048)                             // Modified by Jason Chen, 2021.11.19
 char cmd_str[CONSOLE_STR_BUF_SZ];
 
 int cmd_idx;
@@ -231,6 +231,7 @@ static void DSInterface_parse_command(void)
                 charbuf[data_len - 1] = 0;                                                        // Added by Jason
                 charbuf[data_len - 2] = 0;                                                        // Added by Jason
                 charbuf[1] = '\r';                                                                // Added by Jason
+                printLog("len=%d, ", data_len);                                                    // Added by Jason, 2021.11.19
                 printLog(&charbuf[1]);                                                             // added by Jason
                 printLog(", DSI:Line=%d\r\n\r\n", __LINE__);                                       // Added by Jason
 			}
@@ -277,6 +278,7 @@ static void DSInterface_parse_command(void)
     charbuf[data_len - 1] = 0;                                                        // Added by Jason
     charbuf[data_len - 2] = 0;                                                        // Added by Jason
     charbuf[1] = '\r';                                                                // Added by Jason
+    printLog("len=%d, ", data_len);                                                    // Added by Jason, 2021.11.19
     printLog(&charbuf[2]);                                                             // Added by Jason
     printLog(", DSI:Line=%d\r\n\r\n", __LINE__);                                       // Added by Jason
 #endif
@@ -302,6 +304,7 @@ void DSInterface_BuildCommand(char ch)
 		if (cmd_idx < (int)CONSOLE_STR_BUF_SZ)
            cmd_str[cmd_idx++] = '\0';
 		memcpy( &cmd_str_log[0], cmd_str , 54 + 23);
+		printLog("Len=%d, ", count_c);
 		if(count_c >= (54 + 23))
 		{
 			cmd_str_log[54 + 23] = '\0';

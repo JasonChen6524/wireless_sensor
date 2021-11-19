@@ -60,9 +60,9 @@ int sample_count;
 #define bptFifoThreh               1
 
 //char cal_buf[1720];
-char charbuf[1792] __attribute__((aligned(4)));
+char charbuf[1024 + 64] __attribute__((aligned(4)));                                               // Modified by Jason Chen, 2021.11.19 from 1792 --> (1024 + 64)
 
-//char cal_buf[1792];//824];//[512];cal_buf
+char cal_buf[1024 + 64];// __attribute__((aligned(4)));//824];//[512];                                  // Modified by Jason Chen, 2021.11.19 from 1792 --> (1024 + 64)
 
 addr_val_pair reg_vals[64];
 
@@ -87,11 +87,11 @@ ss_data_req accel_mode1_data_req;                                               
 ss_data_req max30101_mode1_data_req;                                              // Wellness library report needs it
 ss_data_req whrm_wspo2_suite_mode2_data_req;                                      // for Wellness library report.
 
-//ss_data_req whrm_mode1_data_req;
 ss_data_req agc_mode1_data_req;
 ss_data_req bpt_mode1_2_data_req;
 
 #ifdef ENABLE_WHRM_AND_SP02
+ss_data_req whrm_mode1_data_req;
 ss_data_req whrm_wspo2_suite_mode1_data_req;
 #endif
 
@@ -226,7 +226,7 @@ void whrm_wspo2_suite_data_rx_mode2(uint8_t* data_ptr)                          
 	enqueue(&whrm_wspo2_suite_queue, &sample);
   //pr_info("hr=%.1f conf=%d rr=%.1f rr_conf=%d status=%d\r\n", (float)sample.hr / 10.0, sample.hr_conf, (float)sample.rr/10, sample.rr_conf,sample.activity_class);
     pr_info("hr=%.1f spo2=%0.1f rr=%.1f rr_conf=%d status=%d\r\n", (float)sample.hr / 10.0, (float)sample.spo2/10.0, (float)sample.rr/10, sample.rr_conf,sample.activity_class);
-#if DEBUG_LEVEL
+#if 0//DEBUG_LEVEL
     uint16_t hr21 = sample.hr / 10;
 
     uint16_t spo21 = sample.spo2/10;
@@ -1530,7 +1530,7 @@ static uint8_t parse_command_00(const char* cmd)
 					char cal_str[2*(sizeof(cal_result)-1)+1];
 					int ii,str_idx = 0;
 
-					data_report_mode = 0;//get_cfg_bpt_cal_data;                                                           // Nov18 by Jason Chen, 2021.11.18
+					data_report_mode = get_cfg_bpt_cal_data;                                                           // Nov18 by Jason Chen, 2021.11.18
 
 					status = get_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_result[0], sizeof(cal_result));
                      if (status != SS_SUCCESS) {
@@ -1552,8 +1552,8 @@ static uint8_t parse_command_00(const char* cmd)
 
 //					str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "00");
 					//printLog("\r\n%s value=%s err=%d, %d\r\n", cmd, cal_str, COMM_SUCCESS, sizeof(cal_result));
-                    //data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
-					//snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);             // Nov18 by Jason Chen, 2021.11.18
+                    data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
+					snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);             // Nov18 by Jason Chen, 2021.11.18
 					//printLog("%s\r\n", cal_str);
 
 					//ble_response = true;
@@ -1692,7 +1692,7 @@ static uint8_t parse_command_00(const char* cmd)
 					int k = i;
 					//static bool cal_data_flag = false;
 
-					//memset(cal_buf, 0, sizeof(cal_buf));                                          // Nov18 by Jason Chen, 2021.11.18
+					memset(cal_buf, 0, sizeof(cal_buf));                                          // Nov18 by Jason Chen, 2021.11.18
 					data_report_mode = 0;//set_cfg_bpt_cal_data;
 
 					//printLog(" \r\n __DEBUG Cal cmd pulled=");
@@ -1705,7 +1705,7 @@ static uint8_t parse_command_00(const char* cmd)
 					snprintf(charbuf,sizeof(charbuf),"%s\r\n", cmd);
 					charbuf[77] = '\0';
 					if (ret) {
-						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);                  // Nov18 by Jason Chen, 2021.11.18
+						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);                  // Nov18 by Jason Chen, 2021.11.18
 						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_INVALID_PARAM, __LINE__);
 						break;
 					}
@@ -1739,12 +1739,14 @@ static uint8_t parse_command_00(const char* cmd)
 #else
 					if (status == SS_SUCCESS)
 					{
-						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);                 // Nov18 by Jason Chen, 2021.11.18
-						printLog("%s.... err=%d\r\n\r\n", charbuf, COMM_SUCCESS);
+						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);                 // Nov18 by Jason Chen, 2021.11.18
+						printLog("Len:%d, ", data_len);
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_SUCCESS, __LINE__);
 					}
 					else
 					{
-						//snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);            // Nov18 by Jason Chen, 2021.11.18
+						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);            // Nov18 by Jason Chen, 2021.11.18
+						printLog("Len:%d, ", data_len);
 						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_GENERAL_ERROR, __LINE__);
 					}
 
@@ -1837,6 +1839,7 @@ static uint8_t parse_command_00(const char* cmd)
         charbuf[data_len - 1] = 0;                                                                  // Added by Jason
         charbuf[data_len - 2] = 0;                                                                  // Added by Jason
         charbuf[1] = '\r';                                                                          // Added by Jason
+        printLog("len=%d, ", data_len);                                                           // Added by Jason
         printLog(&charbuf[2]);                                                                      // Added by Jason
         printLog(", MAX30101:Line=%d\r\n\r\n", __LINE__);                                           // Added by Jason
 	}
@@ -2084,15 +2087,17 @@ static int data_report_execute_00(char* buf, int size)
 
 		case get_cfg_bpt_cal_data:
 		{
-			//sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
-			//data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
+			sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
+			data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
+			cal_buf[64] = 0x00;
+			printLog("len=%d, %s....\r\n", data_len,cal_buf);
 			data_report_mode = 0;
 		}break;
 
 		case set_cfg_bpt_cal_data:
 		{
-			//sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
-			//data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
+			sprintf(buf, "%s", cal_buf);                          // Nov18 by Jason Chen, 2021.11.18
+			data_len = strlen(cal_buf);                           // Nov18 by Jason Chen, 2021.11.18
 			data_report_mode = 0;
 		}break;
 

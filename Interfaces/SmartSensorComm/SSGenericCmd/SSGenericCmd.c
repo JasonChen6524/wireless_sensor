@@ -259,9 +259,10 @@ static uint8_t parse_command_02(const char* cmd)
 			BLE_AddtoQueue((uint8_t *)charbuf, (int32_t)sizeof(charbuf), data_len, __LINE__);
 		}
 #endif
-        charbuf[data_len - 1] = 0;                                                                  // Added by Jason
-        charbuf[data_len - 2] = 0;                                                                  // Added by Jason
-        charbuf[1] = '\r';                                                                          // Added by Jason
+        charbuf[data_len - 1] = 0;                                                                   // Added by Jason
+        charbuf[data_len - 2] = 0;                                                                   // Added by Jason
+        charbuf[1] = '\r';                                                                           // Added by Jason
+        printLog("len=%d, ", data_len);                                                              // Added by Jason, 2021.11.19
         printLog(&charbuf[2]);                                                                       // Added by Jason
         printLog(", SSG:Line=%d\r\n\r\n", __LINE__);                                                 // Added by Jason
 	}
