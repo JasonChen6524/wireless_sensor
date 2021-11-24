@@ -61,7 +61,7 @@ int sample_count;
 
 //char cal_buf[1720];
 char charbuf[1024 + 64] __attribute__((aligned(4)));                                               // Modified by Jason Chen, 2021.11.19 from 1792 --> (1024 + 64)
-
+char cal_str[2*512+1];
 char cal_buf[1024 + 64];// __attribute__((aligned(4)));//824];//[512];                                  // Modified by Jason Chen, 2021.11.19 from 1792 --> (1024 + 64)
 
 addr_val_pair reg_vals[64];
@@ -1524,40 +1524,96 @@ static uint8_t parse_command_00(const char* cmd)
 
 				case get_cfg_bpt_cal_data:
 				{
-					//Calibration result is 824 bytes
-					//uint8_t cal_result[824+1]; // +1 for status byte
-					uint8_t cal_result[512+1]; // +1 for status byte
-					char cal_str[2*(sizeof(cal_result)-1)+1];
+					//char cal_str[2*512+1];
 					int ii,str_idx = 0;
 
 					data_report_mode = get_cfg_bpt_cal_data;                                                           // Nov18 by Jason Chen, 2021.11.18
 
-					status = get_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_result[0], sizeof(cal_result));
+					status = get_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, (uint8_t*)&charbuf[0], 513);
                      if (status != SS_SUCCESS) {
 						printLog("\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
 						data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s err=%d\r\n", cmd,COMM_GENERAL_ERROR);
 						break;
 					}
-                    /* ___DEBUG:  Create synthetic contigous data to test BLE data drop*/
-                    /*uint8_t seed = 0x41;
-                    for(int i = 0; i < 824 ; i++ ){
-                        *(cal_result+i) = seed;
-                    	seed = (seed == 0x5A)? 0x41:(seed+1);
-                    }*/
 
-				   for (ii = 0; ii < sizeof(cal_result)-1; ii++)
-						str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "%02X", cal_result[ii+1]);
+				   for (ii = 0; ii < 512; ii++)
+				      str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "%02X", charbuf[ii+1]);
 
 					cal_data_flag  = true;
 
-//					str_idx += snprintf(cal_str + str_idx, sizeof(cal_str) - str_idx, "00");
-					//printLog("\r\n%s value=%s err=%d, %d\r\n", cmd, cal_str, COMM_SUCCESS, sizeof(cal_result));
                     data_len = snprintf(charbuf, sizeof(charbuf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);
 					snprintf(cal_buf, sizeof(cal_buf),"\r\n%s value=%s err=%d\r\n", cmd, cal_str, COMM_SUCCESS);             // Nov18 by Jason Chen, 2021.11.18
-					//printLog("%s\r\n", cal_str);
 
 					//ble_response = true;
 
+				} break;
+
+				case set_cfg_bpt_cal_data:
+				{
+					//uint8_t cal_data[824];
+					uint8_t cal_data[512+1];
+					int k = i;
+					//static bool cal_data_flag = false;
+
+					memset(cal_buf, 0, sizeof(cal_buf));                                          // Nov18 by Jason Chen, 2021.11.18
+					data_report_mode = 0;//set_cfg_bpt_cal_data;
+
+					//printLog(" \r\n __DEBUG Cal cmd pulled=");
+					//for(i= 0; i < 32/*1792*/ ; i++){
+					//	printLog("%c", *(cmd+i));
+					//}
+					//printLog("......\r\n");
+
+					ret = parse_cal_str(cmd, cmd_tbl[k], (uint8_t*)cal_data, 512);//sizeof(cal_data));
+					snprintf(charbuf,sizeof(charbuf),"%s\r\n", cmd);
+					charbuf[77] = '\0';
+					if (ret) {
+						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);                  // Nov18 by Jason Chen, 2021.11.18
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_INVALID_PARAM, __LINE__);
+						break;
+					}
+
+					if(!(cal_index_falg & (1 << index_val)))
+					{
+						status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, (uint8_t*)&cal_data[0], 512);//sizeof(cal_data));
+						cal_index_falg |= (1 << index_val);
+					}
+					else
+					{
+						printLog("---->The calibration data (index=%d) exists...\r\n", index_val);
+						status = SS_SUCCESS;
+					}
+#if 0
+					if (status == SS_SUCCESS)
+					{
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_SUCCESS);
+						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
+					}
+					else
+					{
+						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
+						charbuf[16 + 23] = '\0';
+						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
+						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
+					}
+					//ble_response = true;
+#else
+					if (status == SS_SUCCESS)
+					{
+						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);                 // Nov18 by Jason Chen, 2021.11.18
+						printLog("Len:%d, ", data_len);
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_SUCCESS, __LINE__);
+					}
+					else
+					{
+						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);            // Nov18 by Jason Chen, 2021.11.18
+						printLog("Len:%d, ", data_len);
+						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_GENERAL_ERROR, __LINE__);
+					}
+
+#endif
 				} break;
 
 				case set_cfg_bpt_date_time:
@@ -1686,72 +1742,6 @@ static uint8_t parse_command_00(const char* cmd)
 
 				} break;
 
-				case set_cfg_bpt_cal_data:
-				{
-					uint8_t cal_data[824];
-					int k = i;
-					//static bool cal_data_flag = false;
-
-					memset(cal_buf, 0, sizeof(cal_buf));                                          // Nov18 by Jason Chen, 2021.11.18
-					data_report_mode = 0;//set_cfg_bpt_cal_data;
-
-					//printLog(" \r\n __DEBUG Cal cmd pulled=");
-					//for(i= 0; i < 32/*1792*/ ; i++){
-					//	printLog("%c", *(cmd+i));
-					//}
-					//printLog("......\r\n");
-
-					ret = parse_cal_str(cmd, cmd_tbl[k], cal_data, 512);//sizeof(cal_data));
-					snprintf(charbuf,sizeof(charbuf),"%s\r\n", cmd);
-					charbuf[77] = '\0';
-					if (ret) {
-						snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_INVALID_PARAM);                  // Nov18 by Jason Chen, 2021.11.18
-						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_INVALID_PARAM, __LINE__);
-						break;
-					}
-
-					if(!(cal_index_falg & (1 << index_val)))
-					{
-						status = set_algo_cfg(SS_ALGOIDX_BPT, SS_CFGIDX_BP_CAL_DATA, &cal_data[0], 512);//sizeof(cal_data));
-						cal_index_falg |= (1 << index_val);
-					}
-					else
-					{
-						printLog("---->The calibration data (index=%d) exists...\r\n", index_val);
-						status = SS_SUCCESS;
-					}
-#if 0
-					if (status == SS_SUCCESS)
-					{
-						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_SUCCESS);
-						charbuf[16 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_SUCCESS);
-						//data_len = snprintf(cal_buf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_SUCCESS);
-					}
-					else
-					{
-						snprintf(charbuf,sizeof(charbuf),"\r\n%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);
-						charbuf[16 + 23] = '\0';
-						data_len = snprintf(charbuf,sizeof(charbuf),"\r\n%s ... err=%d\r\n", charbuf, COMM_GENERAL_ERROR);
-						//data_len = snprintf(charbuf,sizeof(charbuf),"\r\nset_cfg bpt cal_result err=%d\r\n", COMM_GENERAL_ERROR);
-					}
-					//ble_response = true;
-#else
-					if (status == SS_SUCCESS)
-					{
-						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_SUCCESS);                 // Nov18 by Jason Chen, 2021.11.18
-						printLog("Len:%d, ", data_len);
-						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_SUCCESS, __LINE__);
-					}
-					else
-					{
-						data_len = snprintf(cal_buf,sizeof(cal_buf),"%s err=%d\r\n", cmd, COMM_GENERAL_ERROR);            // Nov18 by Jason Chen, 2021.11.18
-						printLog("Len:%d, ", data_len);
-						printLog("%s.... err=%d, Line:%d\r\n\r\n", charbuf, COMM_GENERAL_ERROR, __LINE__);
-					}
-
-#endif
-				} break;
 
 				case set_cfg_bpt_cal_index:
 				{
